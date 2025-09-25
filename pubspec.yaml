@@ -1,5 +1,5 @@
 name: citypulse
-description: "A new Flutter project."
+description: "FixMate - A citizen reporting app for community issues"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,10 +30,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
+  flutter_map: ^8.2.2
+  flutter_map_marker_cluster: ^8.2.2
+  latlong2: ^0.9.1
+  geolocator: ^12.0.0
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
+  shared_preferences: ^2.3.2
+  uuid: ^4.5.1
+  provider: ^6.1.1
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +63,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/lang/en.json
+    - assets/lang/ms.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:
