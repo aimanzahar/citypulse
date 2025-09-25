@@ -1,0 +1,174 @@
+{
+  "meta": {
+    "name": "FixMate Design Tokens",
+    "version": "1.0.0",
+    "brand": "Civic Premium – Citizen First"
+  },
+  "color": {
+    "palette": {
+      "brandPrimary": "#1E5CE0",
+      "brandPrimaryDark": "#1748AC",
+      "brandPrimaryLight": "#8CB0FF",
+      "neutral0": "#FFFFFF",
+      "neutral10": "#F5F7FB",
+      "neutral20": "#E9EDF5",
+      "neutral30": "#D8DFEB",
+      "neutral40": "#B8C2D5",
+      "neutral50": "#99A3B8",
+      "neutral60": "#7A859E",
+      "neutral70": "#5C6782",
+      "neutral80": "#3D4765",
+      "neutral90": "#21283C",
+      "neutral100": "#0E1322",
+      "success": "#2E7D32",
+      "warning": "#ED6C02",
+      "error": "#D32F2F",
+      "info": "#0288D1"
+    },
+    "semantic": {
+      "primary": "{color.palette.brandPrimary}",
+      "primaryDark": "{color.palette.brandPrimaryDark}",
+      "primaryLight": "{color.palette.brandPrimaryLight}",
+      "background": "{color.palette.neutral10}",
+      "surface": "{color.palette.neutral0}",
+      "surfaceVariant": "{color.palette.neutral20}",
+      "onPrimary": "#FFFFFF",
+      "onBackground": "{color.palette.neutral100}",
+      "onSurface": "{color.palette.neutral100}",
+      "outline": "{color.palette.neutral30}",
+      "success": "{color.palette.success}",
+      "onSuccess": "#FFFFFF",
+      "warning": "{color.palette.warning}",
+      "onWarning": "#FFFFFF",
+      "error": "{color.palette.error}",
+      "onError": "#FFFFFF",
+      "info": "{color.palette.info}",
+      "onInfo": "#FFFFFF"
+    }
+  },
+  "typography": {
+    "families": {
+      "display": "SF Pro Display, Inter, Roboto, system-ui, -apple-system",
+      "body": "SF Pro Text, Inter, Roboto, system-ui, -apple-system",
+      "mono": "SF Mono, Menlo, Roboto Mono, ui-monospace"
+    },
+    "weight": {
+      "regular": 400,
+      "medium": 500,
+      "semibold": 600,
+      "bold": 700
+    },
+    "scale": {
+      "xs": 12,
+      "sm": 14,
+      "md": 16,
+      "lg": 18,
+      "xl": 20,
+      "xxl": 24,
+      "displaySm": 28,
+      "displayMd": 32,
+      "displayLg": 40
+    },
+    "lineHeight": {
+      "tight": 1.15,
+      "standard": 1.35,
+      "loose": 1.5
+    }
+  },
+  "spacing": {
+    "x1": 4,
+    "x2": 8,
+    "x3": 12,
+    "x4": 16,
+    "x5": 20,
+    "x6": 24,
+    "x8": 32,
+    "x10": 40,
+    "x12": 48,
+    "x16": 64
+  },
+  "radii": {
+    "xs": 6,
+    "sm": 8,
+    "md": 12,
+    "lg": 16,
+    "xl": 24,
+    "pill": 100
+  },
+  "shadows": {
+    "sm": [
+      {"x":0,"y":1,"blur":2,"spread":0,"opacity":0.10}
+    ],
+    "md": [
+      {"x":0,"y":2,"blur":6,"spread":0,"opacity":0.12},
+      {"x":0,"y":8,"blur":12,"spread":-6,"opacity":0.10}
+    ],
+    "lg": [
+      {"x":0,"y":12,"blur":24,"spread":-6,"opacity":0.12},
+      {"x":0,"y":24,"blur":36,"spread":-12,"opacity":0.10}
+    ]
+  },
+  "motion": {
+    "durations": {
+      "fast": 120,
+      "medium": 200,
+      "slow": 300,
+      "slower": 450
+    },
+    "easing": {
+      "standard": [0.2, 0.0, 0.0, 1.0],
+      "accelerate": [0.4, 0.0, 1.0, 1.0],
+      "decelerate": [0.0, 0.0, 0.2, 1.0],
+      "emphasize": [0.2, 0.0, 0.0, 1.0]
+    },
+    "recommendations": {
+      "screenTransitionMs": [200, 320],
+      "buttonTapMs": [80, 140],
+      "listReorderMs": [120, 200]
+    }
+  },
+  "themes": {
+    "light": {
+      "primary": "{color.palette.brandPrimary}",
+      "onPrimary": "#FFFFFF",
+      "background": "{color.palette.neutral10}",
+      "onBackground": "{color.palette.neutral100}",
+      "surface": "{color.palette.neutral0}",
+      "onSurface": "{color.palette.neutral100}",
+      "surfaceVariant": "{color.palette.neutral20}",
+      "onSurfaceVariant": "{color.palette.neutral80}"
+    },
+    "dark": {
+      "primary": "{color.palette.brandPrimaryLight}",
+      "onPrimary": "{color.palette.neutral100}",
+      "background": "{color.palette.neutral100}",
+      "onBackground": "{color.palette.neutral10}",
+      "surface": "{color.palette.neutral90}",
+      "onSurface": "{color.palette.neutral10}",
+      "surfaceVariant": "{color.palette.neutral80}",
+      "onSurfaceVariant": "{color.palette.neutral20}"
+    },
+    "highContrast": {
+      "primary": "{color.palette.brandPrimaryDark}",
+      "onPrimary": "#FFFFFF",
+      "background": "{color.palette.neutral0}",
+      "onBackground": "{color.palette.neutral100}",
+      "surface": "{color.palette.neutral0}",
+      "onSurface": "{color.palette.neutral100}",
+      "surfaceVariant": "{color.palette.neutral20}",
+      "onSurfaceVariant": "{color.palette.neutral100}"
+    }
+  },
+  "status": {
+    "severity": {
+      "high": "#D32F2F",
+      "medium": "#ED6C02",
+      "low": "#2E7D32"
+    },
+    "report": {
+      "submitted": "#1E5CE0",
+      "in_progress": "#7A859E",
+      "fixed": "#2E7D32"
+    }
+  }
+}
