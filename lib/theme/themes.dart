@@ -124,7 +124,7 @@ class AppThemes {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.5),
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),
           borderSide: BorderSide(color: AppColors.neutral30),
@@ -151,7 +151,7 @@ class AppThemes {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceVariant,
+        backgroundColor: colorScheme.surfaceContainerHighest,
         selectedColor: colorScheme.primary.withOpacity(0.14),
         secondarySelectedColor: colorScheme.primary.withOpacity(0.14),
         labelStyle: TextStyle(color: colorScheme.onSurface),
@@ -234,7 +234,7 @@ class AppThemes {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: colorScheme.surfaceVariant.withOpacity(0.3),
+        fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.3),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadii.lg),
           borderSide: BorderSide(color: AppColors.neutral80),
@@ -261,7 +261,7 @@ class AppThemes {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: colorScheme.surfaceVariant.withOpacity(0.5),
+        backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         selectedColor: colorScheme.primary.withOpacity(0.22),
         secondarySelectedColor: colorScheme.primary.withOpacity(0.22),
         labelStyle: TextStyle(color: colorScheme.onSurface),

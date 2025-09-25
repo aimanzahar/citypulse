@@ -279,7 +279,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    Widget _page(String titleKey, String bodyKey, IconData icon) {
+    Widget page(String titleKey, String bodyKey, IconData icon) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -306,9 +306,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               controller: _pc,
               onPageChanged: (i) => setState(() => _index = i),
               children: [
-                _page('onboarding.title1', 'onboarding.body1', Icons.flash_on),
-                _page('onboarding.title2', 'onboarding.body2', Icons.map),
-                _page('onboarding.title3', 'onboarding.body3', Icons.check_circle),
+                page('onboarding.title1', 'onboarding.body1', Icons.flash_on),
+                page('onboarding.title2', 'onboarding.body2', Icons.map),
+                page('onboarding.title3', 'onboarding.body3', Icons.check_circle),
               ],
             ),
           ),
