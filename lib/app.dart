@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'l10n/i18n.dart';
 import 'l10n/locale_provider.dart';
 import 'screens/report_flow/capture_screen.dart';
@@ -22,10 +23,29 @@ class FixMateApp extends StatelessWidget {
           darkTheme: AppThemes.dark(),
           themeMode: ThemeMode.system,
           locale: localeProvider.locale,
-          supportedLocales: const [
-            Locale('en', 'US'),
-            Locale('ms', 'MY'),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
           ],
+          supportedLocales: const [
+            Locale('en'),
+            Locale('ms'),
+          ],
+          localeResolutionCallback: (locale, supported) {
+            debugPrint('[i18n] localeResolution: device=$locale, supported=$supported');
+            if (locale == null) return supported.first;
+            for (final s in supported) {
+              if (s.languageCode == locale.languageCode) {
+                return s;
+              }
+            }
+            return supported.first;
+          },
+          builder: (context, child) {
+            debugPrint('[i18n] Building MaterialApp; locale=${localeProvider.locale}');
+            return child!;
+          },
           home: const StartRouter(),
         );
       },
@@ -153,6 +173,7 @@ class _StartRouterState extends State<StartRouter> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[i18n] StartRouter: hasMaterial=${Localizations.of<MaterialLocalizations>(context, MaterialLocalizations) != null} locale=${Localizations.localeOf(context)}');
     if (_loading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'i18n.dart';
 
 /// Provider for managing app locale and language switching
 class LocaleProvider extends ChangeNotifier {
@@ -20,6 +21,7 @@ class LocaleProvider extends ChangeNotifier {
     _prefs = await SharedPreferences.getInstance();
     final savedLanguage = _prefs.getString(_languageKey) ?? _defaultLanguage;
     _locale = Locale(savedLanguage);
+    await I18n.init(_locale);
     notifyListeners();
   }
 
@@ -29,6 +31,7 @@ class LocaleProvider extends ChangeNotifier {
 
     _locale = locale;
     await _prefs.setString(_languageKey, locale.languageCode);
+    await I18n.init(locale);
     notifyListeners();
   }
 

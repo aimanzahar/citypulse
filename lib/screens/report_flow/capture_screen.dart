@@ -116,6 +116,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
  
   @override
   Widget build(BuildContext context) {
+    debugPrint('[i18n] CaptureScreen: locale=${I18n.currentLocale} prompt=${I18n.t('capture.prompt')}');
     return Scaffold(
       appBar: AppBar(
         title: Text(I18n.t('nav.report')),
@@ -126,7 +127,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Take a photo of the issue',
+              I18n.t('capture.prompt'),
               style: Theme.of(context).textTheme.headlineSmall,
               textAlign: TextAlign.center,
             ),

@@ -64,9 +64,11 @@ class _MapScreenState extends State<MapScreen> {
     _applyFilters();
     // If we have filtered reports, fit; otherwise try device location
     if (_filteredReports.isNotEmpty) {
+      debugPrint('[map] _refresh: filtered=${_filteredReports.length}; scheduling fitBounds postFrame');
       WidgetsBinding.instance.addPostFrameCallback((_) => _fitToBounds());
     } else {
-      await _centerOnDeviceOrDefault();
+      debugPrint('[map] _refresh: filtered=0; scheduling centerOnDeviceOrDefault postFrame');
+      WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnDeviceOrDefault());
     }
   }
 
@@ -74,11 +76,12 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final pos = await LocationService.getBestAvailablePosition();
       if (pos != null) {
+        debugPrint('[map] _centerOnDeviceOrDefault: moving to device location (${pos.latitude}, ${pos.longitude})');
         _mapController.move(LatLng(pos.latitude, pos.longitude), _defaultZoom);
         return;
       }
     } catch (_) {}
-    // fallback
+    debugPrint('[map] _centerOnDeviceOrDefault: moving to default center ($_defaultCenter) zoom=$_defaultZoom');
     _mapController.move(_defaultCenter, _defaultZoom);
   }
 
