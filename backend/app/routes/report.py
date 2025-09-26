@@ -11,7 +11,7 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-UPLOAD_DIR = "app/static/uploads"
+UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 @router.post("/report")
@@ -33,8 +33,23 @@ async def report_issue(
         raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
     logger.debug(f"User found: {user.name} ({user.email})")
 
+    # Validate file type
+    allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
+    allowed_content_types = {
+        'image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/webp',
+        'application/octet-stream'  # Some cameras/mobile devices use this
+    }
+
+    file_ext = os.path.splitext(image.filename.lower())[1]
+    if file_ext not in allowed_extensions:
+        logger.error(f"Invalid file extension: {file_ext}")
+        raise HTTPException(status_code=400, detail="Only image files are allowed")
+
+    if image.content_type not in allowed_content_types:
+        logger.error(f"Invalid content type: {image.content_type}")
+        raise HTTPException(status_code=400, detail="Invalid file type")
+
     # Save uploaded image
-    file_ext = os.path.splitext(image.filename)[1]
     filename = f"{uuid.uuid4()}{file_ext}"
     file_path = os.path.join(UPLOAD_DIR, filename)
     try:

@@ -96,6 +96,37 @@ uvicorn main:app --reload
 flutter run
 ```
 
+### Method E: Dashboard Access (Web Interface)
+```bash
+# Terminal 1 - Start Backend Server
+cd backend
+python main.py
+# OR (if port conflicts occur):
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+
+# Terminal 2 - Start Dashboard Server
+cd dashboard
+python -m http.server 3000
+
+# Open browser and navigate to:
+# http://localhost:3000
+```
+
+**Dashboard Features:**
+- 🗺️ Interactive map with report visualization
+- 🔍 Advanced filtering by category, severity, status, and date
+- 📊 Real-time statistics and analytics
+- 🌡️ Heatmap toggle for density visualization
+- 🔄 Status management (submitted → in_progress → fixed)
+- 📱 Responsive design for desktop and mobile
+- 🌍 Bilingual support (English/Bahasa Malaysia)
+
+**Troubleshooting Dashboard:**
+- **Port 8000 in use?** Try: `uvicorn main:app --host 127.0.0.1 --port 8080 --reload` (then update dashboard to use port 8080)
+- **Port 3000 in use?** Try: `python -m http.server 3001`
+- **Backend connection fails?** Dashboard will automatically use demo data
+- **CORS issues?** Ensure backend allows requests from `http://localhost:3000`
+
 ## 📱 API Endpoints
 
 The Flutter app communicates with these backend endpoints:
@@ -249,6 +280,7 @@ flutter config --enable-web
 - Ensure backend server is running on port 8000
 - Check firewall settings
 - Verify API base URL in `lib/services/api_service.dart`
+- For dashboard: Check browser console for CORS errors
 
 **Camera/Geolocation not working:**
 - Grant permissions in device settings

@@ -7,8 +7,9 @@ import '../models/enums.dart';
 /// Service for communicating with the FixMate Backend API
 class ApiService {
   // Configure this to match your backend URL
-  static const String _baseUrl = 'http://127.0.0.1:8000/api';
-  static const String _uploadsUrl = 'http://127.0.0.1:8000/static/uploads';
+  // Use localhost for web/desktop, network IP for mobile/emulator
+  static const String _baseUrl = 'http://192.168.100.59:8000/api';
+  static const String _uploadsUrl = 'http://192.168.100.59:8000/static/uploads';
 
   // Create a user ID for this device if not exists
   static Future<String> _getOrCreateUserId() async {

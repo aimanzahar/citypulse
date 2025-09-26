@@ -67,6 +67,7 @@ print("✅ FastAPI server setup complete")
 # Start the server when running this script directly
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting server on http://127.0.0.1:8000")
+    print("🚀 Starting server on http://0.0.0.0:8000")
     print("📚 API documentation available at http://127.0.0.1:8000/docs")
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    print("🔗 Also accessible from mobile/emulator at http://192.168.100.59:8000")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
