@@ -120,6 +120,19 @@ button.chip[aria-pressed="false"]{opacity:0.55;filter:grayscale(0.15)}
 .thumb{width:56px;height:56px;border-radius:6px;background:linear-gradient(180deg,#eef2ff,#fff);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:700}
 .item-main{flex:1;min-width:0}
 .item-title{font-weight:600;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.item-title.clickable{
+  cursor:pointer;
+  transition:all 0.2s ease;
+  border-radius:4px;
+  padding:2px 4px;
+  margin:-2px -4px;
+}
+.item-title.clickable:hover{
+  background-color:rgba(14,165,164,0.1);
+  color:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:0 2px 8px rgba(14,165,164,0.15);
+}
 .item-meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
 .item-actions{display:flex;align-items:center}
 

@@ -320,6 +320,25 @@ function App(){
     window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
   };
 
+  const navigateToLocation = (r) => {
+    const map = mapRef.current;
+    if (!map || !r.location) return;
+
+    const { lat, lng } = r.location;
+    const currentZoom = map.getZoom();
+    const targetZoom = 20; // Maximum zoom level for focusing on a specific location
+
+    // First zoom out a bit for animation effect, then zoom to target
+    map.flyTo([lat, lng], targetZoom, {
+      animate: true,
+      duration: 1.5,
+      easeLinearity: 0.25
+    });
+
+    // Also set the selected item to show details
+    setSelected(r);
+  };
+
   return (
     <div className="app-root">
       <header className="header">
@@ -411,7 +430,13 @@ function App(){
                 <div key={r.id} className="queue-item" role="listitem">
                   <div className="thumb">{t(`category.${r.category}`) || r.category}</div>
                   <div className="item-main">
-                    <div className="item-title">{t(`category.${r.category}`) || r.category}</div>
+                    <div
+                      className="item-title clickable"
+                      onClick={() => navigateToLocation(r)}
+                      title="Click to view on map"
+                    >
+                      {t(`category.${r.category}`) || r.category}
+                    </div>
                     <div className="item-meta">
                       <span className={`chip severity-${r.severity}`}>{t(`severity.${r.severity}`) || r.severity}</span>
                       <span className={`chip status-${r.status}`}>{t(`status.${r.status}`) || r.status}</span>
