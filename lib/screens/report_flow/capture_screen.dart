@@ -7,23 +7,23 @@ import '../../services/mock_ai.dart';
 import '../../models/report.dart';
 import '../../models/enums.dart';
 import 'review_screen.dart';
- 
+
 class CaptureScreen extends StatefulWidget {
   const CaptureScreen({super.key});
- 
+
   @override
   State<CaptureScreen> createState() => _CaptureScreenState();
 }
- 
+
 class _CaptureScreenState extends State<CaptureScreen> {
   final ImagePicker _picker = ImagePicker();
   bool _isLoading = false;
- 
+
   Future<void> _pickImage(ImageSource source) async {
     setState(() {
       _isLoading = true;
     });
- 
+
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
@@ -31,15 +31,15 @@ class _CaptureScreenState extends State<CaptureScreen> {
         maxHeight: 1080,
         imageQuality: 85,
       );
- 
+
       if (image != null) {
         await _processImage(image, source);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
       }
     } finally {
       if (mounted) {
@@ -49,24 +49,26 @@ class _CaptureScreenState extends State<CaptureScreen> {
       }
     }
   }
- 
+
   Future<void> _processImage(XFile image, ImageSource source) async {
     try {
       // Get current position (Geolocator.Position)
       final position = await LocationService.getCurrentPosition();
- 
+
       if (position == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to get location. Please try again.')),
+            const SnackBar(
+              content: Text('Unable to get location. Please try again.'),
+            ),
           );
         }
         return;
       }
- 
+
       // Convert Position -> LocationData (app model)
       final locationData = LocationService.positionToLocationData(position);
- 
+
       // Generate AI suggestion (seeded deterministic)
       final aiSuggestion = MockAIService.generateSuggestion(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -75,7 +77,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
         lng: locationData.lng,
         photoSizeBytes: await image.length(),
       );
- 
+
       // Create report with AI suggestion
       final report = Report(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
@@ -96,70 +98,202 @@ class _CaptureScreenState extends State<CaptureScreen> {
         aiSuggestion: aiSuggestion,
         schemaVersion: 1,
       );
- 
+
       if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ReviewScreen(report: report, imageFile: File(image.path)),
+            builder: (context) =>
+                ReviewScreen(report: report, imageFile: File(image.path)),
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error processing image: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error processing image: $e')));
       }
     }
   }
- 
+
   @override
   Widget build(BuildContext context) {
-    debugPrint('[i18n] CaptureScreen: locale=${I18n.currentLocale} prompt=${I18n.t('capture.prompt')}');
+    debugPrint(
+      '[i18n] CaptureScreen: locale=${I18n.currentLocale} prompt=${I18n.t('capture.prompt')}',
+    );
+    final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(I18n.t('nav.report')),
+        title: Text(
+          'Report Issue',
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: cs.onSurface,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              I18n.t('capture.prompt'),
-              style: Theme.of(context).textTheme.headlineSmall,
-              textAlign: TextAlign.center,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFF8FAFC), Color(0xFFF1F5F9)],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Enhanced header section
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Camera icon with gradient
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF22C55E), Color(0xFF4ADE80)],
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt,
+                          color: Colors.white,
+                          size: 48,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        'Report City Issues',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: cs.onSurface,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Take a photo of any urban maintenance issue like potholes, broken streetlights, or damaged signage.',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: cs.onSurface.withOpacity(0.7),
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                if (_isLoading)
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: cs.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Processing image...',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  )
+                else ...[
+                  // Enhanced camera button
+                  Container(
+                    width: double.infinity,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF2563EB), Color(0xFF3B82F6)],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2563EB).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.camera),
+                      icon: const Icon(Icons.camera_alt, size: 24),
+                      label: const Text(
+                        'Take Photo',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Enhanced gallery button
+                  Container(
+                    width: double.infinity,
+                    height: 64,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _pickImage(ImageSource.gallery),
+                      icon: const Icon(Icons.photo_library, size: 24),
+                      label: const Text(
+                        'Choose from Gallery',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: cs.primary, width: 2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        foregroundColor: cs.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-            const SizedBox(height: 32),
-            if (_isLoading)
-              const CircularProgressIndicator()
-            else ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.camera),
-                  icon: const Icon(Icons.camera_alt),
-                  label: Text(I18n.t('btn.camera')),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => _pickImage(ImageSource.gallery),
-                  icon: const Icon(Icons.photo_library),
-                  label: Text(I18n.t('btn.gallery')),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );

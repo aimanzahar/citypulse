@@ -9,40 +9,67 @@
       "brandPrimary": "#1E5CE0",
       "brandPrimaryDark": "#1748AC",
       "brandPrimaryLight": "#8CB0FF",
+      "civicBlue": "#2563EB",
+      "civicBlueDark": "#1E40AF",
+      "civicBlueLight": "#3B82F6",
+      "civicOrange": "#F97316",
+      "civicOrangeLight": "#FB923C",
+      "civicGreen": "#22C55E",
+      "civicGreenLight": "#4ADE80",
       "neutral0": "#FFFFFF",
-      "neutral10": "#F5F7FB",
-      "neutral20": "#E9EDF5",
-      "neutral30": "#D8DFEB",
-      "neutral40": "#B8C2D5",
-      "neutral50": "#99A3B8",
-      "neutral60": "#7A859E",
-      "neutral70": "#5C6782",
-      "neutral80": "#3D4765",
-      "neutral90": "#21283C",
-      "neutral100": "#0E1322",
-      "success": "#2E7D32",
-      "warning": "#ED6C02",
-      "error": "#D32F2F",
-      "info": "#0288D1"
+      "neutral10": "#F8FAFC",
+      "neutral20": "#F1F5F9",
+      "neutral30": "#E2E8F0",
+      "neutral40": "#CBD5E1",
+      "neutral50": "#94A3B8",
+      "neutral60": "#64748B",
+      "neutral70": "#475569",
+      "neutral80": "#334155",
+      "neutral90": "#1E293B",
+      "neutral100": "#0F172A",
+      "success": "#16A34A",
+      "successLight": "#86EFAC",
+      "warning": "#F59E0B",
+      "warningLight": "#FCD34D",
+      "error": "#DC2626",
+      "errorLight": "#FCA5A5",
+      "info": "#0EA5E9",
+      "infoLight": "#7DD3FC",
+      "surfaceGradient1": "#FAFAFA",
+      "surfaceGradient2": "#F8FAFC"
     },
     "semantic": {
-      "primary": "{color.palette.brandPrimary}",
-      "primaryDark": "{color.palette.brandPrimaryDark}",
-      "primaryLight": "{color.palette.brandPrimaryLight}",
-      "background": "{color.palette.neutral10}",
+      "primary": "{color.palette.civicBlue}",
+      "primaryDark": "{color.palette.civicBlueDark}",
+      "primaryLight": "{color.palette.civicBlueLight}",
+      "secondary": "{color.palette.civicOrange}",
+      "secondaryLight": "{color.palette.civicOrangeLight}",
+      "accent": "{color.palette.civicGreen}",
+      "accentLight": "{color.palette.civicGreenLight}",
+      "background": "{color.palette.surfaceGradient1}",
       "surface": "{color.palette.neutral0}",
       "surfaceVariant": "{color.palette.neutral20}",
+      "surfaceContainer": "{color.palette.neutral10}",
+      "surfaceContainerHigh": "{color.palette.neutral20}",
       "onPrimary": "#FFFFFF",
+      "onSecondary": "#FFFFFF",
+      "onAccent": "#FFFFFF",
       "onBackground": "{color.palette.neutral100}",
       "onSurface": "{color.palette.neutral100}",
+      "onSurfaceVariant": "{color.palette.neutral80}",
       "outline": "{color.palette.neutral30}",
+      "outlineVariant": "{color.palette.neutral40}",
       "success": "{color.palette.success}",
+      "successLight": "{color.palette.successLight}",
       "onSuccess": "#FFFFFF",
       "warning": "{color.palette.warning}",
+      "warningLight": "{color.palette.warningLight}",
       "onWarning": "#FFFFFF",
       "error": "{color.palette.error}",
+      "errorLight": "{color.palette.errorLight}",
       "onError": "#FFFFFF",
       "info": "{color.palette.info}",
+      "infoLight": "{color.palette.infoLight}",
       "onInfo": "#FFFFFF"
     }
   },
@@ -161,14 +188,42 @@
   },
   "status": {
     "severity": {
-      "high": "#D32F2F",
-      "medium": "#ED6C02",
-      "low": "#2E7D32"
+      "high": "#DC2626",
+      "highLight": "#FCA5A5",
+      "medium": "#F59E0B",
+      "mediumLight": "#FCD34D",
+      "low": "#16A34A",
+      "lowLight": "#86EFAC"
     },
     "report": {
-      "submitted": "#1E5CE0",
-      "in_progress": "#7A859E",
-      "fixed": "#2E7D32"
+      "submitted": "#2563EB",
+      "submittedLight": "#3B82F6",
+      "in_progress": "#64748B",
+      "in_progressLight": "#94A3B8",
+      "fixed": "#16A34A",
+      "fixedLight": "#86EFAC"
     }
+  },
+  "gradients": {
+    "primary": [
+      {"color": "#2563EB", "position": 0.0},
+      {"color": "#3B82F6", "position": 1.0}
+    ],
+    "secondary": [
+      {"color": "#F97316", "position": 0.0},
+      {"color": "#FB923C", "position": 1.0}
+    ],
+    "success": [
+      {"color": "#16A34A", "position": 0.0},
+      {"color": "#22C55E", "position": 1.0}
+    ],
+    "surface": [
+      {"color": "#FAFAFA", "position": 0.0},
+      {"color": "#F8FAFC", "position": 1.0}
+    ],
+    "card": [
+      {"color": "#FFFFFF", "position": 0.0},
+      {"color": "#F8FAFC", "position": 1.0}
+    ]
   }
 }

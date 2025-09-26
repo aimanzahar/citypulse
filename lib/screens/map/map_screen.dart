@@ -51,7 +51,10 @@ class _MapScreenState extends State<MapScreen> {
 
   void _setDefaultDateRange() {
     final now = DateTime.now();
-    _filterDateRange = DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
+    _filterDateRange = DateTimeRange(
+      start: now.subtract(const Duration(days: 30)),
+      end: now,
+    );
   }
 
   Future<void> _refresh() async {
@@ -64,11 +67,17 @@ class _MapScreenState extends State<MapScreen> {
     _applyFilters();
     // If we have filtered reports, fit; otherwise try device location
     if (_filteredReports.isNotEmpty) {
-      debugPrint('[map] _refresh: filtered=${_filteredReports.length}; scheduling fitBounds postFrame');
+      debugPrint(
+        '[map] _refresh: filtered=${_filteredReports.length}; scheduling fitBounds postFrame',
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) => _fitToBounds());
     } else {
-      debugPrint('[map] _refresh: filtered=0; scheduling centerOnDeviceOrDefault postFrame');
-      WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnDeviceOrDefault());
+      debugPrint(
+        '[map] _refresh: filtered=0; scheduling centerOnDeviceOrDefault postFrame',
+      );
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _centerOnDeviceOrDefault(),
+      );
     }
   }
 
@@ -76,12 +85,16 @@ class _MapScreenState extends State<MapScreen> {
     try {
       final pos = await LocationService.getBestAvailablePosition();
       if (pos != null) {
-        debugPrint('[map] _centerOnDeviceOrDefault: moving to device location (${pos.latitude}, ${pos.longitude})');
+        debugPrint(
+          '[map] _centerOnDeviceOrDefault: moving to device location (${pos.latitude}, ${pos.longitude})',
+        );
         _mapController.move(LatLng(pos.latitude, pos.longitude), _defaultZoom);
         return;
       }
     } catch (_) {}
-    debugPrint('[map] _centerOnDeviceOrDefault: moving to default center ($_defaultCenter) zoom=$_defaultZoom');
+    debugPrint(
+      '[map] _centerOnDeviceOrDefault: moving to default center ($_defaultCenter) zoom=$_defaultZoom',
+    );
     _mapController.move(_defaultCenter, _defaultZoom);
   }
 
@@ -96,8 +109,16 @@ class _MapScreenState extends State<MapScreen> {
         final created = DateTime.tryParse(r.createdAt);
         if (created == null) return false;
         // include the end day fully
-        final endInclusive = DateTime(range.end.year, range.end.month, range.end.day, 23, 59, 59);
-        if (created.isBefore(range.start) || created.isAfter(endInclusive)) return false;
+        final endInclusive = DateTime(
+          range.end.year,
+          range.end.month,
+          range.end.day,
+          23,
+          59,
+          59,
+        );
+        if (created.isBefore(range.start) || created.isAfter(endInclusive))
+          return false;
       }
       return true;
     }).toList();
@@ -111,7 +132,9 @@ class _MapScreenState extends State<MapScreen> {
 
   void _fitToBounds() {
     if (_filteredReports.isEmpty) return;
-    final points = _filteredReports.map((r) => LatLng(r.location.lat, r.location.lng)).toList();
+    final points = _filteredReports
+        .map((r) => LatLng(r.location.lat, r.location.lng))
+        .toList();
     if (points.isEmpty) return;
     final bounds = LatLngBounds.fromPoints(points);
     try {
@@ -126,21 +149,70 @@ class _MapScreenState extends State<MapScreen> {
   List<Marker> _buildMarkers() {
     return _filteredReports.map((r) {
       final latlng = LatLng(r.location.lat, r.location.lng);
+      final severityColor = _getSeverityColor(r.severity);
+
       return Marker(
         point: latlng,
-        width: 40,
-        height: 40,
+        width: 48,
+        height: 48,
         child: GestureDetector(
           onTap: () => _onMarkerTap(r),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.location_on, color: r.severity.color, size: 36),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: severityColor,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 3),
+                  boxShadow: [
+                    BoxShadow(
+                      color: severityColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _getCategoryIcon(r.category),
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
             ],
           ),
         ),
       );
     }).toList();
+  }
+
+  Color _getSeverityColor(Severity severity) {
+    switch (severity) {
+      case Severity.high:
+        return const Color(0xFFDC2626);
+      case Severity.medium:
+        return const Color(0xFFF59E0B);
+      case Severity.low:
+        return const Color(0xFF16A34A);
+    }
+  }
+
+  IconData _getCategoryIcon(Category category) {
+    switch (category) {
+      case Category.pothole:
+        return Icons.warning;
+      case Category.streetlight:
+        return Icons.lightbulb;
+      case Category.signage:
+        return Icons.traffic;
+      case Category.trash:
+        return Icons.delete;
+      case Category.drainage:
+        return Icons.water;
+      case Category.other:
+        return Icons.category;
+    }
   }
 
   void _onMarkerTap(Report r) {
@@ -162,17 +234,26 @@ class _MapScreenState extends State<MapScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(I18n.t(r.category.key), style: Theme.of(context).textTheme.titleLarge),
+                          Text(
+                            I18n.t(r.category.key),
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
                           const SizedBox(height: 8),
-                          Row(children: [
-                            SeverityBadge(severity: r.severity, small: true),
-                            const SizedBox(width: 8),
-                            StatusBadge(status: r.status, small: true),
-                          ]),
+                          Row(
+                            children: [
+                              SeverityBadge(severity: r.severity, small: true),
+                              const SizedBox(width: 8),
+                              StatusBadge(status: r.status, small: true),
+                            ],
+                          ),
                           const SizedBox(height: 8),
-                          Text('${I18n.t('label.location')}: ${r.location.lat.toStringAsFixed(6)}, ${r.location.lng.toStringAsFixed(6)}'),
+                          Text(
+                            '${I18n.t('label.location')}: ${r.location.lat.toStringAsFixed(6)}, ${r.location.lng.toStringAsFixed(6)}',
+                          ),
                           const SizedBox(height: 4),
-                          Text('${I18n.t('label.createdAt')}: ${r.createdAt.split('T').first}'),
+                          Text(
+                            '${I18n.t('label.createdAt')}: ${r.createdAt.split('T').first}',
+                          ),
                         ],
                       ),
                     ),
@@ -186,16 +267,27 @@ class _MapScreenState extends State<MapScreen> {
                       onPressed: () {
                         Navigator.of(ctx).pop(); // close sheet
                         // Navigate to My Reports tab/screen (simplest)
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const MyReportsScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MyReportsScreen(),
+                          ),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(I18n.t('map.openedInMyReports') ?? I18n.t('nav.myReports'))),
+                          SnackBar(
+                            content: Text(
+                              I18n.t('map.openedInMyReports') ??
+                                  I18n.t('nav.myReports'),
+                            ),
+                          ),
                         );
                       },
                       child: Text(I18n.t('btn.viewDetails')),
                     ),
                     const SizedBox(width: 8),
                     ElevatedButton(
-                      onPressed: () => _openExternalMap(r.location.lat, r.location.lng),
+                      onPressed: () =>
+                          _openExternalMap(r.location.lat, r.location.lng),
                       child: Text(I18n.t('btn.openMap')),
                     ),
                   ],
@@ -239,13 +331,19 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _openExternalMap(double lat, double lng) async {
-    final uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$lat,$lng',
+    );
     try {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.t('error.openMap'))));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(I18n.t('error.openMap'))));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.t('error.openMap'))));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(I18n.t('error.openMap'))));
     }
   }
 
@@ -261,146 +359,184 @@ class _MapScreenState extends State<MapScreen> {
       context: context,
       isScrollControlled: true,
       builder: (ctx) {
-        return StatefulBuilder(builder: (context, setModalState) {
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(mainAxisSize: MainAxisSize.min, children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(I18n.t('btn.filter'), style: Theme.of(context).textTheme.titleMedium),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(ctx),
-                      )
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Align(alignment: Alignment.centerLeft, child: Text(I18n.t('filter.category'))),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: Category.all.map((c) {
-                      final selected = selCategories.contains(c);
-                      return FilterChip(
-                        label: Text(I18n.t(c.key)),
-                        selected: selected,
-                        onSelected: (v) {
-                          setModalState(() {
-                            if (v) {
-                              selCategories.add(c);
-                            } else {
-                              selCategories.remove(c);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerLeft, child: Text(I18n.t('filter.severity'))),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: Severity.all.map((s) {
-                      final selected = selSeverities.contains(s);
-                      return FilterChip(
-                        label: Text(I18n.t(s.key)),
-                        selected: selected,
-                        onSelected: (v) {
-                          setModalState(() {
-                            if (v) {
-                              selSeverities.add(s);
-                            } else {
-                              selSeverities.remove(s);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerLeft, child: Text(I18n.t('filter.status'))),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    children: Status.all.map((st) {
-                      final selected = selStatuses.contains(st);
-                      return FilterChip(
-                        label: Text(I18n.t(st.key)),
-                        selected: selected,
-                        onSelected: (v) {
-                          setModalState(() {
-                            if (v) {
-                              selStatuses.add(st);
-                            } else {
-                              selStatuses.remove(st);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 12),
-                  Align(alignment: Alignment.centerLeft, child: Text(I18n.t('filter.dateRange'))),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          final picked = await showDateRangePicker(
-                            context: context,
-                            firstDate: DateTime(2000),
-                            lastDate: now,
-                            initialDateRange: selRange ?? DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now),
-                          );
-                          if (picked != null) {
-                            setModalState(() => selRange = picked);
-                          }
-                        },
-                        child: Text(selRange == null ? I18n.t('filter.dateRange') : '${selRange!.start.toLocal().toIso8601String().split('T').first} - ${selRange!.end.toLocal().toIso8601String().split('T').first}'),
-                      ),
-                    ),
-                  ]),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      TextButton(
-                        onPressed: () {
-                          setModalState(() {
-                            selCategories = Category.all.toSet();
-                            selSeverities = Severity.all.toSet();
-                            selStatuses = Status.all.toSet();
-                            selRange = DateTimeRange(start: now.subtract(const Duration(days: 30)), end: now);
-                          });
-                        },
-                        child: Text(I18n.t('btn.reset')),
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Apply
-                          setState(() {
-                            _filterCategories = selCategories;
-                            _filterSeverities = selSeverities;
-                            _filterStatuses = selStatuses;
-                            _filterDateRange = selRange;
-                          });
-                          _applyFilters();
-                          Navigator.pop(ctx);
-                        },
-                        child: Text(I18n.t('btn.apply')),
-                      ),
-                    ],
-                  ),
-                ]),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
               ),
-            ),
-          );
-        });
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            I18n.t('btn.filter'),
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(ctx),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(I18n.t('filter.category')),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: Category.all.map((c) {
+                          final selected = selCategories.contains(c);
+                          return FilterChip(
+                            label: Text(I18n.t(c.key)),
+                            selected: selected,
+                            onSelected: (v) {
+                              setModalState(() {
+                                if (v) {
+                                  selCategories.add(c);
+                                } else {
+                                  selCategories.remove(c);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(I18n.t('filter.severity')),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: Severity.all.map((s) {
+                          final selected = selSeverities.contains(s);
+                          return FilterChip(
+                            label: Text(I18n.t(s.key)),
+                            selected: selected,
+                            onSelected: (v) {
+                              setModalState(() {
+                                if (v) {
+                                  selSeverities.add(s);
+                                } else {
+                                  selSeverities.remove(s);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(I18n.t('filter.status')),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        children: Status.all.map((st) {
+                          final selected = selStatuses.contains(st);
+                          return FilterChip(
+                            label: Text(I18n.t(st.key)),
+                            selected: selected,
+                            onSelected: (v) {
+                              setModalState(() {
+                                if (v) {
+                                  selStatuses.add(st);
+                                } else {
+                                  selStatuses.remove(st);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(I18n.t('filter.dateRange')),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                final picked = await showDateRangePicker(
+                                  context: context,
+                                  firstDate: DateTime(2000),
+                                  lastDate: now,
+                                  initialDateRange:
+                                      selRange ??
+                                      DateTimeRange(
+                                        start: now.subtract(
+                                          const Duration(days: 30),
+                                        ),
+                                        end: now,
+                                      ),
+                                );
+                                if (picked != null) {
+                                  setModalState(() => selRange = picked);
+                                }
+                              },
+                              child: Text(
+                                selRange == null
+                                    ? I18n.t('filter.dateRange')
+                                    : '${selRange!.start.toLocal().toIso8601String().split('T').first} - ${selRange!.end.toLocal().toIso8601String().split('T').first}',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              setModalState(() {
+                                selCategories = Category.all.toSet();
+                                selSeverities = Severity.all.toSet();
+                                selStatuses = Status.all.toSet();
+                                selRange = DateTimeRange(
+                                  start: now.subtract(const Duration(days: 30)),
+                                  end: now,
+                                );
+                              });
+                            },
+                            child: Text(I18n.t('btn.reset')),
+                          ),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Apply
+                              setState(() {
+                                _filterCategories = selCategories;
+                                _filterSeverities = selSeverities;
+                                _filterStatuses = selStatuses;
+                                _filterDateRange = selRange;
+                              });
+                              _applyFilters();
+                              Navigator.pop(ctx);
+                            },
+                            child: Text(I18n.t('btn.apply')),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -413,98 +549,197 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: Text(I18n.t('nav.map')),
         actions: [
-          IconButton(icon: const Icon(Icons.filter_list), onPressed: _openFilterModal),
+          IconButton(
+            icon: const Icon(Icons.filter_list),
+            onPressed: _openFilterModal,
+          ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _refresh),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _filteredReports.isEmpty
-              ? Center(child: Text(I18n.t('map.noReports')))
-              : Stack(
+          ? Center(child: Text(I18n.t('map.noReports')))
+          : Stack(
+              children: [
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: _filteredReports.isNotEmpty
+                        ? LatLng(
+                            _filteredReports.first.location.lat,
+                            _filteredReports.first.location.lng,
+                          )
+                        : _defaultCenter,
+                    initialZoom: _defaultZoom,
+                    minZoom: 3.0,
+                    maxZoom: 18.0,
+                  ),
                   children: [
-                    FlutterMap(
-                      mapController: _mapController,
-                      options: MapOptions(
-                        initialCenter: _filteredReports.isNotEmpty
-                            ? LatLng(_filteredReports.first.location.lat, _filteredReports.first.location.lng)
-                            : _defaultCenter,
-                        initialZoom: _defaultZoom,
-                        minZoom: 3.0,
-                        maxZoom: 18.0,
-                      ),
-                      children: [
-                        TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                          userAgentPackageName: 'com.example.citypulse',
-                        ),
-                        if (markers.isNotEmpty)
-                          MarkerClusterLayerWidget(
-                            options: MarkerClusterLayerOptions(
-                              maxClusterRadius: 60,
-                              size: const Size(40, 40),
-                              markers: markers,
-                              spiderfyCircleRadius: 80,
-                              showPolygon: false,
-                              disableClusteringAtZoom: 16,
-                              builder: (context, markers) {
-                                return Container(
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).colorScheme.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Text(
-                                    markers.length.toString(),
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                  ),
-                                );
-                              },
-                              onClusterTap: (cluster) {
-                                try {
-                                  final pts = cluster.markers.map((m) => m.point).toList();
-                                  final bounds = LatLngBounds.fromPoints(pts);
-                                  _mapController.fitCamera(
-                                    CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
-                                  );
-                                } catch (_) {}
-                              },
-                            ),
-                          ),
-                      ],
+                    TileLayer(
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.example.citypulse',
                     ),
-                    // Legend overlay
-                    Positioned(
-                      top: 16,
-                      right: 16,
-                      child: Card(
-                        elevation: 2,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _legendItem(Severity.high, I18n.t('severity.high')),
-                              const SizedBox(width: 8),
-                              _legendItem(Severity.medium, I18n.t('severity.medium')),
-                              const SizedBox(width: 8),
-                              _legendItem(Severity.low, I18n.t('severity.low')),
-                            ],
-                          ),
+                    if (markers.isNotEmpty)
+                      MarkerClusterLayerWidget(
+                        options: MarkerClusterLayerOptions(
+                          maxClusterRadius: 60,
+                          size: const Size(48, 48),
+                          markers: markers,
+                          spiderfyCircleRadius: 80,
+                          showPolygon: false,
+                          disableClusteringAtZoom: 16,
+                          builder: (context, markers) {
+                            return Container(
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF2563EB),
+                                    Color(0xFF3B82F6),
+                                  ],
+                                ),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: const Color(
+                                      0xFF2563EB,
+                                    ).withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                markers.length.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            );
+                          },
+                          onClusterTap: (cluster) {
+                            try {
+                              final pts = cluster.markers
+                                  .map((m) => m.point)
+                                  .toList();
+                              final bounds = LatLngBounds.fromPoints(pts);
+                              _mapController.fitCamera(
+                                CameraFit.bounds(
+                                  bounds: bounds,
+                                  padding: const EdgeInsets.all(60),
+                                ),
+                              );
+                            } catch (_) {}
+                          },
                         ),
                       ),
-                    ),
                   ],
                 ),
+                // Enhanced Legend overlay
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).shadowColor.withOpacity(0.15),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Issue Severity',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _enhancedLegendItem(Severity.high, 'High Priority'),
+                        const SizedBox(height: 8),
+                        _enhancedLegendItem(Severity.medium, 'Medium Priority'),
+                        const SizedBox(height: 8),
+                        _enhancedLegendItem(Severity.low, 'Low Priority'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
   Widget _legendItem(Severity s, String label) {
     return Row(
       children: [
-        Container(width: 12, height: 12, decoration: BoxDecoration(color: s.color, shape: BoxShape.circle)),
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
+        ),
         const SizedBox(width: 6),
         Text(label, style: const TextStyle(fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _enhancedLegendItem(Severity s, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 16,
+          height: 16,
+          decoration: BoxDecoration(
+            color: _getSeverityColor(s),
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.white, width: 2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
       ],
     );
   }
@@ -522,24 +757,46 @@ class MapReportDetails extends StatelessWidget {
       appBar: AppBar(title: Text(I18n.t('btn.details'))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          if (kIsWeb && report.base64Photo != null)
-            Image.memory(base64Decode(report.base64Photo!))
-          else if (!kIsWeb && report.photoPath != null)
-            Image.file(File(report.photoPath!))
-          else
-            Container(height: 180, color: Colors.grey.shade200, alignment: Alignment.center, child: const Icon(Icons.photo, size: 64)),
-          const SizedBox(height: 12),
-          Text(I18n.t(report.category.key), style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: 8),
-          Row(children: [SeverityBadge(severity: report.severity), const SizedBox(width: 8), StatusBadge(status: report.status)]),
-          const SizedBox(height: 12),
-          Text('${I18n.t('label.location')}: ${report.location.lat.toStringAsFixed(6)}, ${report.location.lng.toStringAsFixed(6)}'),
-          const SizedBox(height: 8),
-          Text('${I18n.t('label.createdAt')}: ${created != null ? created.toLocal().toString() : report.createdAt}'),
-          const SizedBox(height: 8),
-          if (report.notes != null) Text('${I18n.t('label.notes')}: ${report.notes}'),
-        ]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (kIsWeb && report.base64Photo != null)
+              Image.memory(base64Decode(report.base64Photo!))
+            else if (!kIsWeb && report.photoPath != null)
+              Image.file(File(report.photoPath!))
+            else
+              Container(
+                height: 180,
+                color: Colors.grey.shade200,
+                alignment: Alignment.center,
+                child: const Icon(Icons.photo, size: 64),
+              ),
+            const SizedBox(height: 12),
+            Text(
+              I18n.t(report.category.key),
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                SeverityBadge(severity: report.severity),
+                const SizedBox(width: 8),
+                StatusBadge(status: report.status),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${I18n.t('label.location')}: ${report.location.lat.toStringAsFixed(6)}, ${report.location.lng.toStringAsFixed(6)}',
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${I18n.t('label.createdAt')}: ${created != null ? created.toLocal().toString() : report.createdAt}',
+            ),
+            const SizedBox(height: 8),
+            if (report.notes != null)
+              Text('${I18n.t('label.notes')}: ${report.notes}'),
+          ],
+        ),
       ),
     );
   }

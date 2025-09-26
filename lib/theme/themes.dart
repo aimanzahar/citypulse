@@ -2,26 +2,50 @@ import 'package:flutter/material.dart';
 
 /// Design tokens and themes for FixMate (Civic Pro Minimal)
 class AppColors {
-  static const Color brandPrimary = Color(0xFF1E5CE0);
-  static const Color brandPrimaryDark = Color(0xFF1748AC);
-  static const Color brandPrimaryLight = Color(0xFF8CB0FF);
+  // Primary civic colors
+  static const Color civicBlue = Color(0xFF2563EB);
+  static const Color civicBlueDark = Color(0xFF1E40AF);
+  static const Color civicBlueLight = Color(0xFF3B82F6);
 
+  // Secondary civic colors
+  static const Color civicOrange = Color(0xFFF97316);
+  static const Color civicOrangeLight = Color(0xFFFB923C);
+
+  // Accent colors
+  static const Color civicGreen = Color(0xFF22C55E);
+  static const Color civicGreenLight = Color(0xFF4ADE80);
+
+  // Enhanced neutral palette
   static const Color neutral0 = Color(0xFFFFFFFF);
-  static const Color neutral10 = Color(0xFFF5F7FB);
-  static const Color neutral20 = Color(0xFFE9EDF5);
-  static const Color neutral30 = Color(0xFFD8DFEB);
-  static const Color neutral40 = Color(0xFFB8C2D5);
-  static const Color neutral50 = Color(0xFF99A3B8);
-  static const Color neutral60 = Color(0xFF7A859E);
-  static const Color neutral70 = Color(0xFF5C6782);
-  static const Color neutral80 = Color(0xFF3D4765);
-  static const Color neutral90 = Color(0xFF21283C);
-  static const Color neutral100 = Color(0xFF0E1322);
+  static const Color neutral10 = Color(0xFFF8FAFC);
+  static const Color neutral20 = Color(0xFFF1F5F9);
+  static const Color neutral30 = Color(0xFFE2E8F0);
+  static const Color neutral40 = Color(0xFFCBD5E1);
+  static const Color neutral50 = Color(0xFF94A3B8);
+  static const Color neutral60 = Color(0xFF64748B);
+  static const Color neutral70 = Color(0xFF475569);
+  static const Color neutral80 = Color(0xFF334155);
+  static const Color neutral90 = Color(0xFF1E293B);
+  static const Color neutral100 = Color(0xFF0F172A);
 
-  static const Color success = Color(0xFF2E7D32);
-  static const Color warning = Color(0xFFED6C02);
-  static const Color error = Color(0xFFD32F2F);
-  static const Color info = Color(0xFF0288D1);
+  // Status colors with light variants
+  static const Color success = Color(0xFF16A34A);
+  static const Color successLight = Color(0xFF86EFAC);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color warningLight = Color(0xFFFCD34D);
+  static const Color error = Color(0xFFDC2626);
+  static const Color errorLight = Color(0xFFFCA5A5);
+  static const Color info = Color(0xFF0EA5E9);
+  static const Color infoLight = Color(0xFF7DD3FC);
+
+  // Gradient colors
+  static const Color surfaceGradient1 = Color(0xFFFAFAFA);
+  static const Color surfaceGradient2 = Color(0xFFF8FAFC);
+
+  // Legacy colors for backward compatibility
+  static const Color brandPrimary = civicBlue;
+  static const Color brandPrimaryDark = civicBlueDark;
+  static const Color brandPrimaryLight = civicBlueLight;
 }
 
 class AppRadii {
@@ -71,18 +95,25 @@ class AppThemes {
 
   static ThemeData light() {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: AppColors.brandPrimary,
+      seedColor: AppColors.civicBlue,
       brightness: Brightness.light,
-      primary: AppColors.brandPrimary,
+      primary: AppColors.civicBlue,
+      secondary: AppColors.civicOrange,
     );
 
     return ThemeData(
       useMaterial3: true,
-      colorScheme: colorScheme,
-      scaffoldBackgroundColor: AppColors.neutral10,
-      canvasColor: AppColors.neutral10,
+      colorScheme: colorScheme.copyWith(
+        surfaceContainerLowest: AppColors.neutral10,
+        surfaceContainerLow: AppColors.neutral20,
+        surfaceContainer: AppColors.neutral20,
+        surfaceContainerHigh: AppColors.neutral30,
+        surfaceContainerHighest: AppColors.neutral40,
+      ),
+      scaffoldBackgroundColor: AppColors.surfaceGradient1,
+      canvasColor: AppColors.surfaceGradient1,
       appBarTheme: AppBarTheme(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: colorScheme.onSurface,
         elevation: 0,
         centerTitle: false,
@@ -91,26 +122,30 @@ class AppThemes {
           fontSize: 20,
           fontWeight: FontWeight.w600,
         ),
+        shadowColor: Colors.transparent,
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          textStyle: const TextStyle(fontWeight: FontWeight.w600),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
           ),
+          elevation: 2,
+          shadowColor: colorScheme.primary.withOpacity(0.25),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: colorScheme.primary,
-          side: BorderSide(color: colorScheme.primary, width: 1.2),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+          side: BorderSide(color: colorScheme.primary, width: 1.5),
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
+            borderRadius: BorderRadius.circular(AppRadii.xl),
           ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -120,6 +155,7 @@ class AppThemes {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppRadii.md),
           ),
+          textStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -340,7 +376,10 @@ class AppThemes {
       ),
       snackBarTheme: base.snackBarTheme.copyWith(
         backgroundColor: Colors.black,
-        contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

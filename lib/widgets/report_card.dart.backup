@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../models/report.dart';
 import '../models/enums.dart' as enums;
 import '../services/storage.dart';
+import 'severity_badge.dart';
+import 'status_badge.dart';
 import '../l10n/i18n.dart';
 
 class ReportCard extends StatelessWidget {
@@ -52,7 +54,7 @@ class ReportCard extends StatelessWidget {
   String _formatTime(String iso) {
     try {
       final dt = DateTime.parse(iso).toLocal();
-      return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+      return '${dt.year}-${dt.month.toString().padLeft(2,'0')}-${dt.day.toString().padLeft(2,'0')} ${dt.hour.toString().padLeft(2,'0')}:${dt.minute.toString().padLeft(2,'0')}';
     } catch (_) {
       return iso;
     }
@@ -65,14 +67,8 @@ class ReportCard extends StatelessWidget {
         title: Text(I18n.t('confirm.deleteReport.title')),
         content: Text(I18n.t('confirm.deleteReport.message')),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(I18n.t('btn.no')),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(I18n.t('btn.yes')),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(I18n.t('btn.no'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(I18n.t('btn.yes'))),
         ],
       ),
     );
@@ -80,15 +76,8 @@ class ReportCard extends StatelessWidget {
     if (ok == true) {
       final success = await StorageService.deleteReport(report.id);
       if (success) {
-        if (onDeleted != null) {
-          onDeleted!();
-        }
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(I18n.t('toast.reportDeleted'))),
-          );
-        }
-      }
+        if (onDeleted != null) onDeleted!();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.t('toast.reportDeleted'))));
     }
   }
 
@@ -144,20 +133,11 @@ class ReportCard extends StatelessWidget {
 
   Future<void> _cycleStatus(BuildContext context) async {
     final next = report.status.next;
-    final updated = report.copyWith(
-      status: next,
-      updatedAt: DateTime.now().toIso8601String(),
-    );
+    final updated = report.copyWith(status: next, updatedAt: DateTime.now().toIso8601String());
     final ok = await StorageService.saveReport(updated);
     if (ok) {
-      if (onUpdated != null) {
-        onUpdated!(updated);
-      }
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(I18n.t('btn.changeStatus'))));
-      }
+      if (onUpdated != null) onUpdated!(updated);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(I18n.t('btn.changeStatus'))));
     }
   }
 
@@ -217,9 +197,7 @@ class ReportCard extends StatelessWidget {
                       Row(
                         children: [
                           Icon(
-                            _getCategoryIcon(
-                              enums.Category.values[report.category.index],
-                            ),
+                            _getCategoryIcon(enums.Category.values[report.category.index]),
                             size: 18,
                             color: cs.primary,
                           ),
@@ -227,11 +205,10 @@ class ReportCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               report.category.displayName,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: cs.onSurface,
-                                  ),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: cs.onSurface,
+                              ),
                             ),
                           ),
                         ],
@@ -241,14 +218,9 @@ class ReportCard extends StatelessWidget {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: _getSeverityColorValue(
-                                report.severity,
-                              ).withOpacity(0.1),
+                              color: _getSeverityColorValue(report.severity).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _getSeverityColorValue(report.severity),
@@ -261,9 +233,7 @@ class ReportCard extends StatelessWidget {
                                 Icon(
                                   Icons.warning,
                                   size: 14,
-                                  color: _getSeverityColorValue(
-                                    report.severity,
-                                  ),
+                                  color: _getSeverityColorValue(report.severity),
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
@@ -271,9 +241,7 @@ class ReportCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: _getSeverityColorValue(
-                                      report.severity,
-                                    ),
+                                    color: _getSeverityColorValue(report.severity),
                                   ),
                                 ),
                               ],
@@ -281,14 +249,9 @@ class ReportCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(
-                                report.status,
-                              ).withOpacity(0.1),
+                              color: _getStatusColor(report.status).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: _getStatusColor(report.status),
