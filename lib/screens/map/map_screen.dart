@@ -82,20 +82,35 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _centerOnDeviceOrDefault() async {
+    // Ensure the widget is still mounted before performing operations
+    if (!mounted) return;
+
     try {
       final pos = await LocationService.getBestAvailablePosition();
       if (pos != null) {
         debugPrint(
           '[map] _centerOnDeviceOrDefault: moving to device location (${pos.latitude}, ${pos.longitude})',
         );
-        _mapController.move(LatLng(pos.latitude, pos.longitude), _defaultZoom);
+        try {
+          _mapController.move(
+            LatLng(pos.latitude, pos.longitude),
+            _defaultZoom,
+          );
+        } catch (e) {
+          debugPrint('[map] Error moving to device location: $e');
+        }
         return;
       }
     } catch (_) {}
+
     debugPrint(
       '[map] _centerOnDeviceOrDefault: moving to default center ($_defaultCenter) zoom=$_defaultZoom',
     );
-    _mapController.move(_defaultCenter, _defaultZoom);
+    try {
+      _mapController.move(_defaultCenter, _defaultZoom);
+    } catch (e) {
+      debugPrint('[map] Error moving to default center: $e');
+    }
   }
 
   void _applyFilters() {
@@ -131,7 +146,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _fitToBounds() {
-    if (_filteredReports.isEmpty) return;
+    if (_filteredReports.isEmpty || !mounted) return;
     final points = _filteredReports
         .map((r) => LatLng(r.location.lat, r.location.lng))
         .toList();
@@ -141,8 +156,8 @@ class _MapScreenState extends State<MapScreen> {
       _mapController.fitCamera(
         CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60)),
       );
-    } catch (_) {
-      // ignore
+    } catch (e) {
+      debugPrint('[map] Error fitting to bounds: $e');
     }
   }
 
@@ -276,8 +291,9 @@ class _MapScreenState extends State<MapScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
-                              I18n.t('map.openedInMyReports') ??
-                                  I18n.t('nav.myReports'),
+                              I18n.t('map.openedInMyReports').isNotEmpty
+                                  ? I18n.t('map.openedInMyReports')
+                                  : I18n.t('nav.myReports'),
                             ),
                           ),
                         );
@@ -626,6 +642,7 @@ class _MapScreenState extends State<MapScreen> {
                             );
                           },
                           onClusterTap: (cluster) {
+                            if (!mounted) return;
                             try {
                               final pts = cluster.markers
                                   .map((m) => m.point)
@@ -637,7 +654,11 @@ class _MapScreenState extends State<MapScreen> {
                                   padding: const EdgeInsets.all(60),
                                 ),
                               );
-                            } catch (_) {}
+                            } catch (e) {
+                              debugPrint(
+                                '[map] Error fitting cluster bounds: $e',
+                              );
+                            }
                           },
                         ),
                       ),
@@ -711,20 +732,6 @@ class _MapScreenState extends State<MapScreen> {
                 ),
               ],
             ),
-    );
-  }
-
-  Widget _legendItem(Severity s, String label) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(color: s.color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: const TextStyle(fontSize: 12)),
-      ],
     );
   }
 
