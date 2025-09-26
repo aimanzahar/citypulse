@@ -37,9 +37,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(I18n.t('error.imagePick', {'0': e.toString()})),
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -58,8 +60,10 @@ class _CaptureScreenState extends State<CaptureScreen> {
       if (position == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Unable to get location. Please try again.'),
+            SnackBar(
+              content: const Text(
+                'Unable to get location. Please try again.',
+              ), // TODO: Move to i18n
             ),
           );
         }
@@ -110,9 +114,11 @@ class _CaptureScreenState extends State<CaptureScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error processing image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(I18n.t('error.imageProcessing', {'0': e.toString()})),
+          ),
+        );
       }
     }
   }
@@ -127,7 +133,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Report Issue',
+          I18n.t('capture.title'),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
@@ -181,7 +187,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       ),
                       const SizedBox(height: 20),
                       Text(
-                        'Report City Issues',
+                        I18n.t('capture.subtitle'),
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w700,
@@ -191,7 +197,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Take a photo of any urban maintenance issue like potholes, broken streetlights, or damaged signage.',
+                        I18n.t('capture.description'),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: cs.onSurface.withOpacity(0.7),
                           height: 1.5,
@@ -221,7 +227,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
                         Text(
-                          'Processing image...',
+                          'Processing image...', // TODO: Move to i18n
                           style: TextStyle(fontSize: 16),
                         ),
                       ],
@@ -249,7 +255,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       onPressed: () => _pickImage(ImageSource.camera),
                       icon: const Icon(Icons.camera_alt, size: 24),
                       label: const Text(
-                        'Take Photo',
+                        'Take Photo', // TODO: Move to i18n
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
@@ -274,7 +280,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
                       onPressed: () => _pickImage(ImageSource.gallery),
                       icon: const Icon(Icons.photo_library, size: 24),
                       label: const Text(
-                        'Choose from Gallery',
+                        'Choose from Gallery', // TODO: Move to i18n
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,

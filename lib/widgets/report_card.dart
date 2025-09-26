@@ -380,7 +380,9 @@ class ReportCard extends StatelessWidget {
                         children: [
                           Icon(Icons.visibility),
                           SizedBox(width: 8),
-                          Text('View Details'),
+                          Text(
+                            'View Details',
+                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
                         ],
                       ),
                     ),
@@ -390,7 +392,9 @@ class ReportCard extends StatelessWidget {
                         children: [
                           Icon(Icons.update),
                           SizedBox(width: 8),
-                          Text('Update Status'),
+                          Text(
+                            'Update Status',
+                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
                         ],
                       ),
                     ),
@@ -400,7 +404,10 @@ class ReportCard extends StatelessWidget {
                         children: [
                           Icon(Icons.delete, color: Colors.red),
                           SizedBox(width: 8),
-                          Text('Delete', style: TextStyle(color: Colors.red)),
+                          Text(
+                            'Delete',
+                            style: TextStyle(color: Colors.red),
+                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
                         ],
                       ),
                     ),

@@ -66,9 +66,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error saving report: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(I18n.t('error.saving', {'0': e.toString()}))),
+        );
       }
     } finally {
       if (mounted) {
@@ -86,7 +86,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          'Review & Submit',
+          I18n.t('review.title'),
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         elevation: 0,
@@ -102,7 +102,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : Text(
-                    'Submit',
+                    I18n.t('review.submit'),
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -190,7 +190,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'AI Analysis Complete',
+                              I18n.t('review.aiAnalysis'),
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -198,7 +198,13 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                   ),
                             ),
                             Text(
-                              'Smart detection with ${(widget.report.aiSuggestion.confidence * 100).round()}% confidence',
+                              I18n.t('review.aiConfidence', {
+                                '0':
+                                    (widget.report.aiSuggestion.confidence *
+                                            100)
+                                        .round()
+                                        .toString(),
+                              }),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     color: cs.onSurface.withOpacity(0.7),
@@ -300,7 +306,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               });
                             },
                             icon: const Icon(Icons.check_circle, size: 18),
-                            label: const Text('Use AI Suggestion'),
+                            label: Text(I18n.t('review.useSuggestion')),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0EA5E9),
                               foregroundColor: Colors.white,
@@ -316,7 +322,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           child: OutlinedButton.icon(
                             onPressed: () {},
                             icon: const Icon(Icons.edit, size: 18),
-                            label: const Text('Edit Manually'),
+                            label: Text(I18n.t('review.editManually')),
                             style: OutlinedButton.styleFrom(
                               side: BorderSide(
                                 color: const Color(0xFF0EA5E9),
@@ -359,7 +365,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         Icon(Icons.category, color: cs.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Issue Category',
+                          I18n.t('review.category'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -443,7 +449,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         Icon(Icons.warning, color: cs.secondary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Severity Level',
+                          I18n.t('review.severity'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -539,7 +545,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         Icon(Icons.note, color: cs.primary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Additional Notes',
+                          I18n.t('review.notes'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -552,7 +558,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     TextField(
                       controller: _notesController,
                       decoration: InputDecoration(
-                        hintText: 'Add any additional details or context...',
+                        hintText: I18n.t('review.notesHint'),
                         hintStyle: TextStyle(
                           color: cs.onSurface.withOpacity(0.6),
                         ),
@@ -602,7 +608,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         Icon(Icons.location_on, color: cs.secondary, size: 20),
                         const SizedBox(width: 8),
                         Text(
-                          'Location Details',
+                          I18n.t('review.location'),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 fontWeight: FontWeight.w600,
@@ -630,7 +636,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                'Coordinates',
+                                I18n.t('review.coordinates'),
                                 style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       color: cs.onSurface.withOpacity(0.7),
@@ -659,7 +665,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Accuracy: ${widget.report.location.accuracy!.toStringAsFixed(1)}m',
+                                  I18n.t('review.accuracy', {
+                                    '0': widget.report.location.accuracy!
+                                        .toStringAsFixed(1),
+                                  }),
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: cs.onSurface.withOpacity(0.7),

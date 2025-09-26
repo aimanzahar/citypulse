@@ -679,7 +679,7 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Issue Severity',
+                              I18n.t('label.severity'),
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(
                                     fontWeight: FontWeight.w600,
@@ -691,11 +691,20 @@ class _MapScreenState extends State<MapScreen> {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        _enhancedLegendItem(Severity.high, 'High Priority'),
+                        _enhancedLegendItem(
+                          Severity.high,
+                          '${I18n.t('severity.high')} Priority',
+                        ),
                         const SizedBox(height: 8),
-                        _enhancedLegendItem(Severity.medium, 'Medium Priority'),
+                        _enhancedLegendItem(
+                          Severity.medium,
+                          '${I18n.t('severity.medium')} Priority',
+                        ),
                         const SizedBox(height: 8),
-                        _enhancedLegendItem(Severity.low, 'Low Priority'),
+                        _enhancedLegendItem(
+                          Severity.low,
+                          '${I18n.t('severity.low')} Priority',
+                        ),
                       ],
                     ),
                   ),

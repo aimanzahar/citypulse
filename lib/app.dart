@@ -281,10 +281,6 @@ class _StartRouterState extends State<StartRouter> {
     if (_loading) {
       screen = const Scaffold(body: Center(child: CircularProgressIndicator()));
       screenKey = 'loading';
-    } else if (_userMode == 'guest') {
-      // If user is known to be in guest mode, take them to sign-in / sign-up first
-      screen = const SignInScreen();
-      screenKey = 'signin';
     } else if (!_onboarded) {
       screen = WelcomeScreen(
         onContinue: () async {
@@ -305,14 +301,19 @@ class _StartRouterState extends State<StartRouter> {
           );
         },
         onSkip: () async {
-          // Mark as onboarded and guest so next app start opens sign-up/sign-in
+          // Mark as onboarded and guest so next app start goes to main app
           await _setOnboarded(asGuest: true);
         },
       );
       screenKey = 'welcome';
-    } else {
+    } else if (_userMode == 'guest') {
+      // User is onboarded and in guest mode, take them to main app
       screen = const MainScreen();
       screenKey = 'main';
+    } else {
+      // User is onboarded but not in guest mode, show sign-in screen
+      screen = const SignInScreen();
+      screenKey = 'signin';
     }
 
     return AnimatedSwitcher(
@@ -395,7 +396,7 @@ class WelcomeScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'FixMate',
+                          I18n.t('app.name'),
                           style: Theme.of(context).textTheme.headlineSmall
                               ?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -403,7 +404,7 @@ class WelcomeScreen extends StatelessWidget {
                               ),
                         ),
                         Text(
-                          'Civic Solutions',
+                          'Civic Solutions', // TODO: Add to i18n as app.subtitle
                           style: Theme.of(context).textTheme.bodySmall
                               ?.copyWith(color: cs.onSurface.withOpacity(0.7)),
                         ),
@@ -445,7 +446,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 24),
                       Text(
-                        'Spot it. Snap it. Fix it.',
+                        I18n.t('welcome.title'),
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(
                               fontWeight: FontWeight.w700,
@@ -455,7 +456,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Report city issues in seconds with AI-powered detection. Help create safer, better communities together.',
+                        I18n.t('welcome.subtitle'),
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: cs.onSurface.withOpacity(0.8),
                           height: 1.5,
@@ -473,7 +474,7 @@ class WelcomeScreen extends StatelessWidget {
                     onPressed: onContinue,
                     icon: const Icon(Icons.arrow_forward, size: 20),
                     label: Text(
-                      'Continue as Guest',
+                      I18n.t('cta.continueGuest'),
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: ElevatedButton.styleFrom(
@@ -493,7 +494,7 @@ class WelcomeScreen extends StatelessWidget {
                     onPressed: onSignIn,
                     icon: const Icon(Icons.login, size: 20),
                     label: Text(
-                      'Sign In',
+                      I18n.t('cta.signIn'),
                       style: const TextStyle(fontSize: 16),
                     ),
                     style: OutlinedButton.styleFrom(
@@ -509,7 +510,7 @@ class WelcomeScreen extends StatelessWidget {
                 TextButton(
                   onPressed: onSkip,
                   child: Text(
-                    'Skip for now',
+                    I18n.t('cta.skip'),
                     style: TextStyle(
                       color: cs.onSurface.withOpacity(0.7),
                       fontSize: 16,
@@ -646,7 +647,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      'Welcome to FixMate',
+                      I18n.t('onboarding.header'),
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w600,
                         color: cs.onSurface,
@@ -662,28 +663,25 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                   onPageChanged: (i) => setState(() => _index = i),
                   children: [
                     _buildPage(
-                      title: 'Fast Issue Reporting',
-                      subtitle: 'AI-Powered Detection',
-                      description:
-                          'Simply take a photo of any urban issue - our AI automatically identifies and categorizes the problem in seconds.',
+                      title: I18n.t('onboarding.title1'),
+                      subtitle: I18n.t('onboarding.subtitle1'),
+                      description: I18n.t('onboarding.body1'),
                       icon: Icons.camera_alt,
                       gradientStart: const Color(0xFF22C55E),
                       gradientEnd: const Color(0xFF4ADE80),
                     ),
                     _buildPage(
-                      title: 'Smart City Mapping',
-                      subtitle: 'Real-Time Visualization',
-                      description:
-                          'View all reported issues on an interactive map with intelligent clustering and filtering options.',
+                      title: I18n.t('onboarding.title2'),
+                      subtitle: I18n.t('onboarding.subtitle2'),
+                      description: I18n.t('onboarding.body2'),
                       icon: Icons.map,
                       gradientStart: const Color(0xFF2563EB),
                       gradientEnd: const Color(0xFF3B82F6),
                     ),
                     _buildPage(
-                      title: 'Track Progress',
-                      subtitle: 'Stay Informed',
-                      description:
-                          'Follow the status of your reports from submission to resolution. Help make your community better.',
+                      title: I18n.t('onboarding.title3'),
+                      subtitle: I18n.t('onboarding.subtitle3'),
+                      description: I18n.t('onboarding.body3'),
                       icon: Icons.check_circle,
                       gradientStart: const Color(0xFFF97316),
                       gradientEnd: const Color(0xFFFB923C),
@@ -717,7 +715,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
                           child: Text(
-                            'Skip',
+                            I18n.t('onboarding.skip'),
                             style: TextStyle(
                               color: cs.onSurface.withOpacity(0.7),
                               fontSize: 16,
@@ -739,7 +737,9 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
                             ),
                           ),
                           child: Text(
-                            _index < 2 ? 'Next' : 'Get Started',
+                            _index < 2
+                                ? I18n.t('onboarding.next')
+                                : I18n.t('onboarding.getStarted'),
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
