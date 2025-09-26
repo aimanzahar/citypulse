@@ -1,9 +1,8 @@
 import 'dart:convert';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 import '../models/report.dart';
+import '../models/enums.dart';
 
 /// Service for communicating with the FixMate Backend API
 class ApiService {
@@ -19,15 +18,15 @@ class ApiService {
   }
 
   /// Create a new user
-  static Future<String> createUser({required String name, required String email}) async {
+  static Future<String> createUser({
+    required String name,
+    required String email,
+  }) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/users'),
         headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'name': name,
-          'email': email,
-        }),
+        body: json.encode({'name': name, 'email': email}),
       );
 
       if (response.statusCode == 200) {
@@ -53,7 +52,10 @@ class ApiService {
     try {
       final userId = await _getOrCreateUserId();
 
-      var request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/report'));
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/report'),
+      );
       request.fields['user_id'] = userId;
       request.fields['latitude'] = latitude.toString();
       request.fields['longitude'] = longitude.toString();
@@ -61,11 +63,7 @@ class ApiService {
 
       // Add the image file
       request.files.add(
-        http.MultipartFile.fromBytes(
-          'image',
-          imageBytes,
-          filename: imageName,
-        ),
+        http.MultipartFile.fromBytes('image', imageBytes, filename: imageName),
       );
 
       final response = await request.send();
@@ -156,62 +154,72 @@ class ApiService {
       category: _normalizeCategory(data['category'] ?? ''),
       severity: _normalizeSeverity(data['severity'] ?? 'N/A'),
       status: _normalizeStatus(data['status'] ?? 'New'),
-      description: data['description'] ?? '',
-      latitude: data['latitude']?.toDouble() ?? 0.0,
-      longitude: data['longitude']?.toDouble() ?? 0.0,
-      createdAt: DateTime.parse(data['created_at'] ?? DateTime.now().toIso8601String()),
-      updatedAt: DateTime.parse(data['updated_at'] ?? DateTime.now().toIso8601String()),
-      // Image path will be constructed from the API response
-      imagePath: data['image_path'] != null ? '$_uploadsUrl/${data['image_path'].split('/').last}' : null,
+      photoPath: data['image_path'] != null
+          ? '$_uploadsUrl/${data['image_path'].split('/').last}'
+          : null,
+      location: LocationData(
+        lat: (data['latitude'] as num?)?.toDouble() ?? 0.0,
+        lng: (data['longitude'] as num?)?.toDouble() ?? 0.0,
+      ),
+      createdAt: data['created_at'] ?? DateTime.now().toIso8601String(),
+      updatedAt: data['updated_at'] ?? DateTime.now().toIso8601String(),
+      deviceId: 'api-${data['ticket_id'] ?? ''}',
+      notes: data['description'] as String?,
+      source: 'api',
+      aiSuggestion: AISuggestion(
+        category: _normalizeCategory(data['category'] ?? ''),
+        severity: _normalizeSeverity(data['severity'] ?? 'N/A'),
+        confidence: 0.8, // Default confidence since we don't get this from API
+      ),
     );
   }
 
   /// Normalize category names to match the app's expected format
-  static String _normalizeCategory(String category) {
+  static Category _normalizeCategory(String category) {
     // Convert API categories to app categories
     switch (category.toLowerCase()) {
       case 'pothole':
-        return 'pothole';
+        return Category.pothole;
       case 'streetlight':
       case 'broken_streetlight':
-        return 'streetlight';
+        return Category.streetlight;
       case 'garbage':
-        return 'trash';
+        return Category.trash;
       case 'signage':
-        return 'signage';
+        return Category.signage;
       case 'drainage':
-        return 'drainage';
+        return Category.drainage;
       default:
-        return 'other';
+        return Category.other;
     }
   }
 
   /// Normalize severity levels
-  static String _normalizeSeverity(String severity) {
+  static Severity _normalizeSeverity(String severity) {
     switch (severity.toLowerCase()) {
       case 'high':
-        return 'high';
+        return Severity.high;
       case 'medium':
-        return 'medium';
+        return Severity.medium;
       case 'low':
-        return 'low';
+        return Severity.low;
       default:
-        return 'low'; // Default to low if unknown
+        return Severity.low; // Default to low if unknown
     }
   }
 
   /// Normalize status values
-  static String _normalizeStatus(String status) {
+  static Status _normalizeStatus(String status) {
     switch (status.toLowerCase()) {
       case 'new':
-        return 'submitted';
+        return Status.submitted;
       case 'in progress':
       case 'in_progress':
-        return 'in_progress';
+        return Status.inProgress;
       case 'fixed':
-        return 'fixed';
+        return Status.fixed;
       default:
-        return 'submitted';
+        return Status.submitted;
     }
   }
 }
