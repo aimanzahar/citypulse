@@ -19,19 +19,25 @@ class LocaleProvider extends ChangeNotifier {
   /// Initialize the locale provider
   Future<void> init() async {
     _prefs = await SharedPreferences.getInstance();
-    final savedLanguage = _prefs.getString(_languageKey) ?? _defaultLanguage;
-    _locale = Locale(savedLanguage);
+    final saved = _prefs.getString(_languageKey) ?? _defaultLanguage;
+    final parts = saved.split(RegExp(r'[-_]'));
+    // Normalize and keep language-only locales so they match Global*Localizations delegates
+    final language = parts.isNotEmpty && parts[0].isNotEmpty ? parts[0] : _defaultLanguage;
+    _locale = Locale(language);
     await I18n.init(_locale);
     notifyListeners();
   }
 
   /// Set the locale and persist the change
   Future<void> setLocale(Locale locale) async {
-    if (_locale == locale) return;
+    // Normalize to language-only locale to ensure compatibility with delegates
+    final normalized = Locale(locale.languageCode);
+    if (_locale == normalized) return;
 
-    _locale = locale;
-    await _prefs.setString(_languageKey, locale.languageCode);
-    await I18n.init(locale);
+    _locale = normalized;
+    final saveValue = _locale.languageCode;
+    await _prefs.setString(_languageKey, saveValue);
+    await I18n.init(_locale);
     notifyListeners();
   }
 
@@ -45,7 +51,7 @@ class LocaleProvider extends ChangeNotifier {
   Future<void> setEnglish() async {
     await setLocale(const Locale('en'));
   }
-
+  
   /// Set language to Bahasa Malaysia
   Future<void> setMalay() async {
     await setLocale(const Locale('ms'));

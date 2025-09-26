@@ -102,13 +102,17 @@ class ReportCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 6),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 SeverityBadge(severity: report.severity, small: true),
-                const SizedBox(width: 8),
                 StatusBadge(status: report.status),
-                const SizedBox(width: 8),
-                Text(_formatTime(report.createdAt), style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text(
+                  _formatTime(report.createdAt),
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
               ],
             ),
           ],

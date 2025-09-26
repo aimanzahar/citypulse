@@ -80,7 +80,20 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        transitionBuilder: (child, animation) {
+          final offsetAnimation = Tween<Offset>(begin: const Offset(0.0, 0.02), end: Offset.zero).animate(animation);
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(position: offsetAnimation, child: child),
+          );
+        },
+        child: KeyedSubtree(
+          key: ValueKey<int>(_selectedIndex),
+          child: _screens[_selectedIndex],
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: (index) {
@@ -143,30 +156,49 @@ class _StartRouterState extends State<StartRouter> {
   bool _onboarded = false;
 
   static const String _kOnboardedKey = 'onboarded_v1';
-
+  static const String _kUserModeKey = 'user_mode';
+  
+  String? _userMode;
+  
   @override
   void initState() {
     super.initState();
     _load();
   }
-
+  
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();
     final flag = prefs.getBool(_kOnboardedKey) ?? false;
+    final mode = prefs.getString(_kUserModeKey) ?? '';
     if (mounted) {
       setState(() {
         _onboarded = flag;
+        _userMode = mode.isNotEmpty ? mode : null;
         _loading = false;
       });
     }
   }
-
-  Future<void> _setOnboarded() async {
+  
+  Future<void> _setGuestMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kUserModeKey, 'guest');
+    if (mounted) {
+      setState(() {
+        _userMode = 'guest';
+      });
+    }
+  }
+  
+  Future<void> _setOnboarded({bool asGuest = false}) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kOnboardedKey, true);
+    if (asGuest) {
+      await prefs.setString(_kUserModeKey, 'guest');
+    }
     if (mounted) {
       setState(() {
         _onboarded = true;
+        if (asGuest) _userMode = 'guest';
       });
     }
   }
@@ -174,29 +206,62 @@ class _StartRouterState extends State<StartRouter> {
   @override
   Widget build(BuildContext context) {
     debugPrint('[i18n] StartRouter: hasMaterial=${Localizations.of<MaterialLocalizations>(context, MaterialLocalizations) != null} locale=${Localizations.localeOf(context)}');
+  
+    Widget screen;
+    String screenKey;
+  
     if (_loading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      screen = const Scaffold(body: Center(child: CircularProgressIndicator()));
+      screenKey = 'loading';
+    } else if (_userMode == 'guest') {
+      // If user is known to be in guest mode, take them to sign-in / sign-up first
+      screen = const SignInScreen();
+      screenKey = 'signin';
+    } else if (!_onboarded) {
+      screen = WelcomeScreen(
+        onContinue: () async {
+          // Mark guest mode before continuing through onboarding flow
+          await _setGuestMode();
+          final completed = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(builder: (_) => const OnboardingFlow()),
+          );
+          if (completed == true) {
+            await _setOnboarded();
+          }
+        },
+        onSignIn: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SignInScreen()),
+          );
+        },
+        onSkip: () async {
+          // Mark as onboarded and guest so next app start opens sign-up/sign-in
+          await _setOnboarded(asGuest: true);
+        },
+      );
+      screenKey = 'welcome';
+    } else {
+      screen = const MainScreen();
+      screenKey = 'main';
     }
-    if (_onboarded) return const MainScreen();
-    return WelcomeScreen(
-      onContinue: () async {
-        final completed = await Navigator.push<bool>(
-          context,
-          MaterialPageRoute(builder: (_) => const OnboardingFlow()),
-        );
-        if (completed == true) {
-          await _setOnboarded();
-        }
-      },
-      onSignIn: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const SignInScreen()),
+  
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 420),
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: SlideTransition(
+            position: Tween<Offset>(begin: const Offset(0.0, 0.02), end: Offset.zero).animate(animation),
+            child: child,
+          ),
         );
       },
-      onSkip: () async {
-        await _setOnboarded();
-      },
+      child: KeyedSubtree(
+        key: ValueKey(screenKey),
+        child: screen,
+      ),
     );
   }
 }
@@ -381,7 +446,16 @@ class SignInScreen extends StatelessWidget {
             ),
             const Spacer(),
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () async {
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarded_v1', true);
+                await prefs.setString('user_mode', 'guest');
+                if (context.mounted) {
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (_) => const MainScreen()),
+                  );
+                }
+              },
               child: Text(I18n.t('cta.continueGuest')),
             ),
           ],
