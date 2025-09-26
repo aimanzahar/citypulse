@@ -11,6 +11,32 @@ const STATUS_COLOR = { submitted:'#1976D2', in_progress:'#7B1FA2', fixed:'#455A6
 
 function fetchJSON(path){ return fetch(path).then(r=>r.json()); }
 
+// Normalize API data to expected format
+function normalizeReportData(report) {
+  // If it's already in the expected format (from demo data), return as is
+  if (report.location && report.location.lat !== undefined) {
+    return report;
+  }
+
+  // Convert API format to expected format
+  return {
+    id: report.ticket_id,
+    category: report.category || 'other',
+    severity: report.severity || 'low',
+    status: report.status || 'submitted',
+    notes: report.description || '',
+    location: {
+      lat: report.latitude,
+      lng: report.longitude
+    },
+    createdAt: report.created_at,
+    updatedAt: report.updated_at,
+    // Add missing fields with defaults
+    userId: report.user_id,
+    imagePath: report.image_path
+  };
+}
+
 function useI18n(initialLang='en'){
   const [lang,setLang] = useState(localStorage.getItem('lang') || initialLang);
   const [map,setMap] = useState({en:null,ms:null});
@@ -61,10 +87,32 @@ function App(){
   const [heatEnabled,setHeatEnabled] = useState(false);
 
   useEffect(()=>{
-    fetchJSON('./data/demo-reports.json').then(data=>{
-      setRawData(data);
-      setLoading(false);
-    }).catch(err=>{ console.error(err); setLoading(false); });
+    // Try to fetch from backend API first, fallback to demo data
+    fetch('http://127.0.0.1:8000/api/tickets')
+      .then(r => r.ok ? r.json() : Promise.reject('API not available'))
+      .then(data => {
+        console.log('Loaded data from API:', data.length, 'reports');
+        const normalizedData = data.map(normalizeReportData);
+        setRawData(normalizedData);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.log('API not available, using demo data:', err);
+        return fetchJSON('./data/demo-reports.json');
+      })
+      .then(data => {
+        if (data) {
+          console.log('Loaded demo data:', data.length, 'reports');
+          // Demo data is already in the correct format, but normalize just in case
+          const normalizedData = data.map(normalizeReportData);
+          setRawData(normalizedData);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Error loading data:', err);
+        setLoading(false);
+      });
   },[]);
 
   useEffect(()=>{
@@ -206,21 +254,64 @@ function App(){
     });
   },[filtered]);
 
-  const cycleStatus = (reportId)=>{
-    setRawData(prev=>{
-      const out = prev.map(r=>{
-        if(r.id !== reportId) return r;
-        const idx = STATUSES.indexOf(r.status);
-        const ni = (idx + 1) % STATUSES.length;
-        return {...r, status: STATUSES[ni], updatedAt: new Date().toISOString() };
-      });
-      // if the currently selected item was updated, update the selected state too
-      if(selected && selected.id === reportId){
-        const newSel = out.find(r=>r.id === reportId);
-        setSelected(newSel || null);
+  const cycleStatus = async (reportId)=>{
+    try {
+      // Find the current report to get its status
+      const currentReport = rawData.find(r => r.id === reportId);
+      if (!currentReport) return;
+
+      const idx = STATUSES.indexOf(currentReport.status);
+      const nextStatus = STATUSES[(idx + 1) % STATUSES.length];
+
+      // Try to update via API first
+      const success = await fetch(`http://127.0.0.1:8000/api/tickets/${reportId}?new_status=${encodeURIComponent(nextStatus)}`, {
+        method: 'PATCH'
+      }).then(r => r.ok);
+
+      if (success) {
+        // If API update successful, refresh data from API
+        const response = await fetch('http://127.0.0.1:8000/api/tickets');
+        if (response.ok) {
+          const data = await response.json();
+          const normalizedData = data.map(normalizeReportData);
+          setRawData(normalizedData);
+
+          // Update selected item
+          const updatedReport = normalizedData.find(r => r.id === reportId);
+          setSelected(updatedReport || null);
+        }
+      } else {
+        console.error('Failed to update status via API');
+        // Fallback to local update
+        setRawData(prev=>{
+          const out = prev.map(r=>{
+            if(r.id !== reportId) return r;
+            return {...r, status: nextStatus, updatedAt: new Date().toISOString() };
+          });
+          if(selected && selected.id === reportId){
+            const newSel = out.find(r=>r.id === reportId);
+            setSelected(newSel || null);
+          }
+          return out;
+        });
       }
-      return out;
-    });
+    } catch (error) {
+      console.error('Error updating status:', error);
+      // Fallback to local update
+      setRawData(prev=>{
+        const out = prev.map(r=>{
+          if(r.id !== reportId) return r;
+          const idx = STATUSES.indexOf(r.status);
+          const ni = (idx + 1) % STATUSES.length;
+          return {...r, status: STATUSES[ni], updatedAt: new Date().toISOString() };
+        });
+        if(selected && selected.id === reportId){
+          const newSel = out.find(r=>r.id === reportId);
+          setSelected(newSel || null);
+        }
+        return out;
+      });
+    }
   };
 
   const openInMaps = (r)=>{

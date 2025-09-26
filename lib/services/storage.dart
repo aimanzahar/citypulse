@@ -1,16 +1,29 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/report.dart';
+import 'api_service.dart';
 
 /// Service for persisting reports and managing local storage
 class StorageService {
   static const String _reportsKey = 'reports_v1';
 
-  /// Get all reports from storage
+  /// Get all reports from storage (API first, fallback to local)
   static Future<List<Report>> getReports() async {
+    try {
+      // Try API first
+      final apiReports = await ApiService.getReports();
+      if (apiReports.isNotEmpty) {
+        return apiReports;
+      }
+    } catch (e) {
+      print('API not available, falling back to local storage: $e');
+    }
+
+    // Fallback to local storage
     try {
       final prefs = await SharedPreferences.getInstance();
       final reportsJson = prefs.getString(_reportsKey);
@@ -27,8 +40,31 @@ class StorageService {
     }
   }
 
-  /// Save a single report to storage
+  /// Save a single report to storage (API first, fallback to local)
   static Future<bool> saveReport(Report report) async {
+    try {
+      // Try API first - convert Report to API format
+      final imageBytes = report.photoPath != null
+          ? await _getImageBytes(report)
+          : report.base64Photo != null
+              ? base64.decode(report.base64Photo!)
+              : null;
+
+      if (imageBytes != null) {
+        await ApiService.submitReport(
+          latitude: report.location.lat,
+          longitude: report.location.lng,
+          description: report.notes ?? '',
+          imageBytes: imageBytes,
+          imageName: '${report.id}.jpg',
+        );
+        return true;
+      }
+    } catch (e) {
+      print('API not available, falling back to local storage: $e');
+    }
+
+    // Fallback to local storage
     try {
       final reports = await getReports();
       final existingIndex = reports.indexWhere((r) => r.id == report.id);
@@ -46,8 +82,21 @@ class StorageService {
     }
   }
 
-  /// Delete a report from storage
+  /// Delete a report from storage (API first, fallback to local)
   static Future<bool> deleteReport(String reportId) async {
+    try {
+      // Try API first (note: API doesn't have delete endpoint, so this will always fallback)
+      final apiReport = await ApiService.getReportById(reportId);
+      if (apiReport != null) {
+        // For now, the API doesn't have a delete endpoint, so we can't delete from API
+        // This would need to be added to the backend
+        print('API delete not available, keeping local copy');
+      }
+    } catch (e) {
+      print('API not available: $e');
+    }
+
+    // Fallback to local storage
     try {
       final reports = await getReports();
       final updatedReports = reports.where((r) => r.id != reportId).toList();
@@ -66,9 +115,10 @@ class StorageService {
     }
   }
 
-  /// Clear all reports from storage
+  /// Clear all reports from storage (local only, API doesn't have clear endpoint)
   static Future<bool> clearAllReports() async {
     try {
+      // Note: API doesn't have a clear all endpoint, so we only clear local storage
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_reportsKey);
 
@@ -175,6 +225,30 @@ class StorageService {
     } catch (e) {
       print('Error deleting all photo files: $e');
     }
+  }
+
+  /// Get image bytes for API submission
+  static Future<Uint8List?> _getImageBytes(Report report) async {
+    if (report.photoPath != null) {
+      try {
+        final file = File(report.photoPath!);
+        if (await file.exists()) {
+          return await file.readAsBytes();
+        }
+      } catch (e) {
+        print('Error reading image file: $e');
+      }
+    }
+
+    if (report.base64Photo != null) {
+      try {
+        return base64.decode(report.base64Photo!);
+      } catch (e) {
+        print('Error decoding base64 image: $e');
+      }
+    }
+
+    return null;
   }
 
   /// Get storage statistics

@@ -1,0 +1,16 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlite-utils
+ultralytics
+opencv-python
+pillow
+torch
+torchvision
+torchaudio
+pytest
+black
+isort
+huggingface_hub
+datasets
+transformers
