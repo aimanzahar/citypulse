@@ -1,113 +1,375 @@
-# FixMate — Flutter app + React dashboard (Codespaces-friendly)
+# 🏗️ FixMate - Smart Citizen-Driven Urban Maintenance Platform
 
-FixMate is a lightweight, demo-friendly citizen maintenance reporter. It lets you quickly capture issues, geotag them, and visualize reports on a simple dashboard. There’s no backend; everything runs locally or in the browser — perfect for hackathons, prototypes, and GitHub Codespaces.
+FixMate is a comprehensive citizen reporting application that combines **Flutter frontend** with **Python FastAPI backend** and **AI-powered image classification**. Users can capture urban issues (potholes, broken streetlights, trash, etc.), get automatic AI classification, and track their reports through a complete management system.
 
-## Why this repo exists
-- Zero-backend demo: data lives on-device (or in demo JSON for the dashboard).
-- Deterministic "mock AI" categorization so UX flows are predictable.
-- Fast setup in Codespaces or locally with minimal dependencies.
+## 🎯 System Architecture
 
-## Quick start in GitHub Codespaces
+### Frontend (Flutter)
+- **Location**: Root directory
+- **Technology**: Flutter (Dart) with Material Design
+- **Purpose**: Cross-platform mobile and web interface for citizens
+- **Features**: Camera integration, GPS location, map visualization, bilingual support (EN/BM)
 
-You can run both the Flutter app (as a web app) and the static React dashboard entirely inside a Codespace. No emulators required.
+### Backend (Python FastAPI)
+- **Location**: `backend/` directory
+- **Technology**: Python FastAPI with SQLAlchemy + SQLite
+- **Purpose**: RESTful API server with AI-powered image classification
+- **Features**: YOLO-based object detection, severity classification, ticket management
 
-### 1) Flutter Web (recommended in Codespaces)
-- Prerequisites: Flutter SDK is available in your Codespace. If not, install it or use a devcontainer with Flutter preinstalled. Then enable web:
-  - flutter config --enable-web
-- Install dependencies:
-  - flutter pub get
-- Run a local web server (Codespaces will auto-forward the port):
-  - flutter run -d web-server --web-port 3000
-- Open the forwarded port from the Codespaces ports panel. Camera and geolocation typically work over the Codespaces HTTPS tunneled URL.
+### Data Flow
+```
+User takes photo → Flutter App → FastAPI Backend → AI Analysis → Database
+      ↓                    ↓              ↓            ↓             ↓
+   Reports List ←────── API Calls ←─── HTTP/REST ──→ YOLO Model ─→ SQLite
+```
 
-Notes:
-- Geolocation/camera require HTTPS in many browsers; Codespaces forwarded URLs are HTTPS, which helps.
-- On web, images are stored as base64; on mobile, images are saved to app storage and paths persist (see [lib/services/storage.dart](lib/services/storage.dart:1)).
-- Entry point for the app is [main()](lib/main.dart:8), which wires up i18n and the locale provider and launches [FixMateApp](lib/app.dart:12).
+## 🚀 Quick Start Guide
 
-### 2) React dashboard (static site)
-- Serve inside Codespaces (Python simple HTTP server):
-  - cd dashboard && python -m http.server 8000
-- Open the forwarded port and view your dashboard.
+### Prerequisites
+- **Flutter SDK** 3.8.1+ ([Install Guide](https://docs.flutter.dev/get-started/install))
+- **Python** 3.11+ ([Install Guide](https://python.org/downloads/))
+- **Git** for version control
 
-Behavior:
-- Language toggle persists in localStorage.
-- Filters drive a clustered Leaflet map, queue, drawer, stats, and optional heatmap overlay.
+### 1. Clone and Setup
+```bash
+git clone <your-repo-url>
+cd fixmate-frontend
+```
 
-## Running locally (outside Codespaces)
+### 2. Install Flutter Dependencies
+```bash
+flutter pub get
+```
 
-### Flutter
-- Install Flutter (stable) and run:
-  - flutter pub get
-  - flutter run  (or flutter run -d chrome)
-- Android/iOS will prompt for camera and location permissions. On web, geolocation/camera require HTTPS; some browsers restrict camera on http.
-- App root: [FixMateApp](lib/app.dart:12). Bottom tabs and routing live in [MainScreen](lib/app.dart:36) and the onboarding/start logic lives in [StartRouter](lib/app.dart:114).
+### 3. Setup Backend
+```bash
+cd backend
+pip install -r requirements.txt
+```
 
-### Dashboard
-- Serve the dashboard folder over HTTP:
-  - cd dashboard && python -m http.server 8000
-- Open http://127.0.0.1:8000 (or your dev server URL).
+### 4. Start Backend Server (Terminal 1)
+```bash
+cd backend
+python main.py
+```
+✅ Backend will run on: `http://127.0.0.1:8000`
 
-## Features implemented
-- Flutter app tabs: Report, Map, My Reports, Settings (bilingual EN/BM)
-- Capture flow: camera/gallery, GPS, deterministic mock AI, local storage
-- Map: OpenStreetMap via flutter_map with clustering, filters, marker details, legend, external maps link
-- My Reports: list/detail with status cycle and delete
-- Settings: language toggle and clear data
-- React dashboard: filters, clustered map, queue, drawer, stats, heatmap toggle
+### 5. Start Flutter App (Terminal 2)
+```bash
+# Navigate back to project root
+cd ..
 
-## Project structure
-- Key Flutter files:
-  - [lib/app.dart](lib/app.dart:1)
-  - [lib/main.dart](lib/main.dart:1)
-  - [lib/screens/report_flow/capture_screen.dart](lib/screens/report_flow/capture_screen.dart:1)
-  - [lib/screens/map/map_screen.dart](lib/screens/map/map_screen.dart:1)
-  - [lib/screens/my_reports/my_reports_screen.dart](lib/screens/my_reports/my_reports_screen.dart:1)
-  - [lib/screens/settings/settings_screen.dart](lib/screens/settings/settings_screen.dart:1)
-  - [lib/services/storage.dart](lib/services/storage.dart:1), [lib/services/mock_ai.dart](lib/services/mock_ai.dart:1), [lib/services/location_service.dart](lib/services/location_service.dart:1)
-  - [lib/models/report.dart](lib/models/report.dart:1), [lib/models/enums.dart](lib/models/enums.dart:1)
-  - [assets/lang/en.json](assets/lang/en.json:1), [assets/lang/ms.json](assets/lang/ms.json:1)
+# Start Flutter app (choose your target)
+flutter run                    # Mobile (Android/iOS)
+# OR
+flutter run -d chrome          # Web (Chrome)
+# OR
+flutter run -d web-server      # Web Server
+```
 
-- Dashboard files:
-  - [dashboard/index.html](dashboard/index.html:1), [dashboard/app.js](dashboard/app.js:1), [dashboard/styles.css](dashboard/styles.css:1)
-  - [dashboard/i18n/en.json](dashboard/i18n/en.json:1), [dashboard/i18n/ms.json](dashboard/i18n/ms.json:1)
-  - [dashboard/data/demo-reports.json](dashboard/data/demo-reports.json:1)
+## 🔧 Alternative Startup Methods
 
-## Tech stack
-- Flutter packages: flutter_map, flutter_map_marker_cluster, latlong2, geolocator, image_picker, path_provider, shared_preferences, uuid, url_launcher, provider (see [pubspec.yaml](pubspec.yaml:31))
-- Dashboard: React 18 UMD, Leaflet + markercluster (+ optional heat), Day.js
+### Method A: Backend Only
+```bash
+cd backend
+python main.py
+```
 
-## Developer notes (for quick orientation)
-- App entry: [main()](lib/main.dart:8) initializes locale/i18n and launches [FixMateApp](lib/app.dart:12).
-- Tab nav and screens: [MainScreen](lib/app.dart:36) displays tabs for:
-  - Report: [CaptureScreen](lib/screens/report_flow/capture_screen.dart:1)
-  - Map: [MapScreen](lib/screens/map/map_screen.dart:1)
-  - My Reports: [MyReportsScreen](lib/screens/my_reports/my_reports_screen.dart:1)
-  - Settings: [SettingsScreen](lib/screens/settings/settings_screen.dart:1)
-- Onboarding + welcome handoff: [StartRouter](lib/app.dart:114) decides whether to show onboarding or the main app.
-- Themes live in [lib/theme/themes.dart](lib/theme/themes.dart:1), translations in [assets/lang/en.json](assets/lang/en.json:1) and [assets/lang/ms.json](assets/lang/ms.json:1).
+### Method B: Using Uvicorn (Alternative)
+```bash
+cd backend
+uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+```
 
-## Known limitations
-- No backend; all data is local or demo JSON.
-- "AI" is simulated; severity/category are heuristic and not model-driven.
-- Dashboard UI state is not persisted; a refresh resets filters and selections.
-- OpenStreetMap tile usage is subject to their terms and rate limits.
-- Mobile-only features (camera with native picker, GPS background behavior) won’t fully work in Codespaces; use Flutter Web inside Codespaces for best results.
+### Method C: Flutter Web (Web Version)
+```bash
+flutter run -d chrome  # or firefox, edge
+```
 
-## Visual tokens
-- Severity colors: High #D32F2F, Medium #F57C00, Low #388E3C
-- Status colors: Submitted #1976D2, In Progress #7B1FA2, Fixed #455A64
+### Method D: Development Mode (Hot Reload)
+```bash
+# Terminal 1 - Backend with auto-reload
+cd backend
+uvicorn main:app --reload
 
-## Troubleshooting
-- Browser blocks camera/geolocation on non-HTTPS:
-  - Use Codespaces forwarded HTTPS URL or run locally over HTTPS.
-- Flutter web server port not visible:
-  - Check Codespaces “Ports” tab, ensure the port is “Public”.
-- Slow map tile loads:
-  - You may be rate-limited or on a constrained network; reduce panning/zoom or cache during demos.
+# Terminal 2 - Flutter with hot reload
+flutter run
+```
 
-## License
-- Placeholder: add a LICENSE file or specify licensing before distribution.
+## 📱 API Endpoints
 
-## Acknowledgements
-- OpenStreetMap, Leaflet, flutter_map and community plugins, React, Day.js, Flutter community.
+The Flutter app communicates with these backend endpoints:
+
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/api/tickets` | GET | Fetch all reports |
+| `/api/report` | POST | Submit new report with image |
+| `/api/tickets/{id}` | GET | Get specific report |
+| `/api/tickets/{id}` | PATCH | Update report status |
+| `/api/analytics` | GET | Get dashboard analytics |
+| `/api/users` | POST | Create user account |
+
+### API Documentation
+View interactive API documentation at: `http://127.0.0.1:8000/docs`
+
+---
+
+## 🎮 Features Overview
+
+### Flutter Frontend Features
+- ✅ **Report Flow**: Camera/gallery photo capture with GPS location
+- ✅ **AI Classification**: Automatic issue type and severity detection
+- ✅ **Map View**: Interactive OpenStreetMap with clustering and filtering
+- ✅ **Report Management**: View, edit, and track report status
+- ✅ **Bilingual Support**: English and Bahasa Malaysia
+- ✅ **Settings**: Language toggle and data management
+
+### Backend AI Features
+- ✅ **YOLO Object Detection**: Detects urban issues from images
+- ✅ **Severity Classification**: ML model assesses issue severity
+- ✅ **SQLite Database**: Local data storage with full CRUD operations
+- ✅ **RESTful API**: Complete API for mobile app integration
+- ✅ **File Upload**: Image storage and processing
+
+## 📁 Project Structure
+
+### Frontend (Flutter)
+```
+lib/
+├── app.dart                    # Main app widget and routing
+├── main.dart                   # App entry point
+├── models/
+│   ├── report.dart            # Report data model
+│   └── enums.dart             # Category, severity, status enums
+├── screens/
+│   ├── report_flow/           # Photo capture flow
+│   ├── map/                   # Map visualization screen
+│   ├── my_reports/            # User reports management
+│   └── settings/              # App settings
+├── services/
+│   ├── api_service.dart       # Backend API communication
+│   ├── storage.dart           # Local data storage
+│   ├── location_service.dart  # GPS location services
+│   └── mock_ai.dart           # AI classification logic
+├── theme/
+│   └── themes.dart            # App theming
+├── widgets/                   # Reusable UI components
+└── l10n/                      # Internationalization
+```
+
+### Backend (Python)
+```
+backend/
+├── main.py                    # FastAPI server entry point
+├── requirements.txt           # Python dependencies
+├── app/
+│   ├── database.py           # SQLite database setup
+│   ├── models/               # Database models
+│   ├── routes/               # API route handlers
+│   ├── services/             # Business logic and AI services
+│   ├── schemas/              # Pydantic data models
+│   └── static/uploads/       # Image storage
+└── test/                     # Test files and utilities
+```
+
+## 🛠️ Technology Stack
+
+### Frontend Technology Stack
+- **Flutter**: 3.8.1+ with Material Design
+- **Key Packages**:
+  - `flutter_map` + `flutter_map_marker_cluster` (Interactive maps)
+  - `geolocator` (GPS location services)
+  - `image_picker` (Camera integration)
+  - `http` (API communication)
+  - `provider` (State management)
+  - `shared_preferences` (Local storage)
+
+### Backend Technology Stack
+- **FastAPI**: 0.117.1+ (Modern Python web framework)
+- **SQLAlchemy**: 2.0.43+ (ORM for database operations)
+- **PyTorch**: 2.8.0+ (Machine learning framework)
+- **Ultralytics YOLO**: 8.3.203+ (Object detection)
+- **SQLite**: Local database for data persistence
+
+### AI Models
+- **Object Detection**: YOLOv12n for issue identification
+- **Severity Classification**: Custom PyTorch model
+- **Model Storage**: `backend/app/models/` directory
+
+## 🛠️ Troubleshooting
+
+### Backend Issues
+
+**Port 8000 already in use:**
+```bash
+# Windows
+netstat -ano | findstr :8000
+taskkill /F /IM python.exe
+
+# Alternative: Kill specific process
+Get-Process -Name python | Stop-Process -Force
+```
+
+**Missing dependencies:**
+```bash
+cd backend
+pip install -r requirements.txt
+pip install python-multipart pydantic[email]
+```
+
+**Backend not starting:**
+```bash
+# Test if modules can be imported
+cd backend
+python -c "import main; print('Import successful')"
+```
+
+### Frontend Issues
+
+**Flutter dependencies:**
+```bash
+flutter clean
+flutter pub get
+```
+
+**Device connection issues:**
+```bash
+flutter devices  # List connected devices
+flutter doctor   # Check Flutter installation
+```
+
+**Web-specific issues:**
+```bash
+flutter config --enable-web
+```
+
+### Common Issues
+
+**"Connection refused" errors:**
+- Ensure backend server is running on port 8000
+- Check firewall settings
+- Verify API base URL in `lib/services/api_service.dart`
+
+**Camera/Geolocation not working:**
+- Grant permissions in device settings
+- Use HTTPS for web deployment
+- Check browser permissions
+
+**Slow AI processing:**
+- First startup downloads ML models (may take time)
+- Consider using CPU-only builds for faster startup
+- Check available memory
+
+## 🧪 Testing & Development
+
+### Backend Testing
+```bash
+cd backend
+python -m pytest test/  # Run all tests
+python test/check_torch.py  # Verify PyTorch setup
+```
+
+### Flutter Testing
+```bash
+flutter test              # Run unit tests
+flutter test --coverage   # With coverage report
+```
+
+### Database Management
+```bash
+cd backend
+python -c "from app.database import engine; print('Database file:', engine.url.database)"
+# Database file: backend/app/db/fixmate.db
+```
+
+## 📊 Performance Considerations
+
+### Backend Performance
+- **First Startup**: ML models download (~200MB) - may take several minutes
+- **Memory Usage**: PyTorch models require significant RAM
+- **CPU vs GPU**: CPU-only builds available for compatibility
+- **Database**: SQLite suitable for small-scale deployments
+
+### Frontend Performance
+- **Image Processing**: Images compressed before upload
+- **Map Rendering**: Clustering optimizes marker display
+- **Caching**: Local storage for offline functionality
+
+## 🚀 Production Deployment
+
+### Backend Deployment
+```bash
+cd backend
+# Production server
+uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4
+
+# Or with Gunicorn
+gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker
+```
+
+### Flutter Deployment
+```bash
+# Build for production
+flutter build apk --release      # Android
+flutter build ios --release      # iOS
+flutter build web --release      # Web
+
+# Build for specific targets
+flutter build appbundle          # Android App Bundle
+flutter build ipa               # iOS Archive
+```
+
+## 📚 Key Files Reference
+
+### Essential Flutter Files
+- `lib/main.dart` - App entry point
+- `lib/app.dart` - Main app widget and navigation
+- `lib/services/api_service.dart` - Backend communication
+- `lib/models/report.dart` - Data models
+- `pubspec.yaml` - Flutter dependencies
+
+### Essential Backend Files
+- `backend/main.py` - FastAPI server
+- `backend/app/database.py` - Database configuration
+- `backend/app/routes/tickets.py` - Ticket API endpoints
+- `backend/app/services/ai_service.py` - AI classification logic
+- `backend/requirements.txt` - Python dependencies
+
+## 🎯 Future Enhancements
+
+### Planned Features
+- [ ] Real-time notifications for status updates
+- [ ] Advanced filtering and search capabilities
+- [ ] User authentication and profiles
+- [ ] Admin dashboard for report management
+- [ ] Push notifications for mobile
+- [ ] Offline mode with sync capabilities
+- [ ] Multi-language support expansion
+- [ ] Analytics and reporting dashboard
+
+### Technical Improvements
+- [ ] Database optimization for large datasets
+- [ ] Caching layer implementation
+- [ ] API rate limiting
+- [ ] Image compression optimization
+- [ ] Background processing for AI tasks
+- [ ] Monitoring and logging enhancement
+
+## 📄 License & Acknowledgments
+
+### License
+- Placeholder: Add appropriate license for your project
+
+### Acknowledgments
+- **OpenStreetMap** - Map data and tile services
+- **Leaflet** - Interactive mapping library
+- **Flutter Community** - Dart packages and plugins
+- **Ultralytics** - YOLO implementation
+- **PyTorch** - Machine learning framework
+- **FastAPI** - Modern Python web framework
+
+### References
+1. [Flutter Documentation](https://docs.flutter.dev/)
+2. [FastAPI Documentation](https://fastapi.tiangolo.com/)
+3. [YOLOv12 Implementation](https://github.com/ultralytics/ultralytics)
+4. [PyTorch Models](https://pytorch.org/)
