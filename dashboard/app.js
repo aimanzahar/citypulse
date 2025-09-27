@@ -332,12 +332,24 @@ function App(){
     return Array.from(s);
   }, [rawData]);
 
+// Map dashboard status format to backend enum format
+const mapStatusToBackend = (dashboardStatus) => {
+  const statusMapping = {
+    'submitted': 'New',
+    'in_progress': 'In Progress',
+    'fixed': 'Fixed'
+  };
+  return statusMapping[dashboardStatus] || dashboardStatus;
+};
+
 const updateTicketStatus = async (reportId, newStatus) => {
   try {
+    const backendStatus = mapStatusToBackend(newStatus);
+    console.log('Updating status:', newStatus, '->', backendStatus);
     const res = await fetch(`${BACKEND_BASE}/api/tickets/${reportId}/status`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
+      body: JSON.stringify({ status: backendStatus })
     });
     if (res.ok) {
       // Prefer using returned updated ticket if provided
@@ -348,7 +360,7 @@ const updateTicketStatus = async (reportId, newStatus) => {
         setRawData(prev => prev.map(r => r.id === reportId ? normalized : r));
         if (selected && selected.id === reportId) setSelected(normalized);
       } else {
-        // No body returned - update local state
+        // No body returned - update local state (keep dashboard format)
         setRawData(prev=> prev.map(r=> r.id === reportId ? {...r, status: newStatus, updatedAt: new Date().toISOString()} : r));
         if(selected && selected.id === reportId) setSelected(prev => ({...prev, status: newStatus, updatedAt: new Date().toISOString()}));
       }
