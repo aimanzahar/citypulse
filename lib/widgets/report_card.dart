@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/report.dart';
 import '../models/enums.dart' as enums;
 import '../services/storage.dart';
+import '../services/api_service.dart';
 import '../l10n/i18n.dart';
 
 class ReportCard extends StatelessWidget {
@@ -22,6 +23,30 @@ class ReportCard extends StatelessWidget {
   });
 
   Widget _buildThumbnail() {
+    final placeholder = Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: Colors.grey.shade200,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Icon(Icons.image, color: Colors.grey.shade600),
+    );
+
+    // Prefer backend-provided image URL when available
+    if (report.imageUrl != null && report.imageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          report.imageUrl!,
+          width: 72,
+          height: 72,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => placeholder,
+        ),
+      );
+    }
+
     if (kIsWeb && report.base64Photo != null) {
       try {
         final bytes = base64Decode(report.base64Photo!);
@@ -32,21 +57,15 @@ class ReportCard extends StatelessWidget {
       } catch (_) {}
     } else if (report.photoPath != null) {
       final file = File(report.photoPath!);
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: Image.file(file, width: 72, height: 72, fit: BoxFit.cover),
-      );
+      if (file.existsSync()) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.file(file, width: 72, height: 72, fit: BoxFit.cover),
+        );
+      }
     }
 
-    return Container(
-      width: 72,
-      height: 72,
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(Icons.image, color: Colors.grey.shade600),
-    );
+    return placeholder;
   }
 
   String _formatTime(String iso) {
@@ -78,7 +97,19 @@ class ReportCard extends StatelessWidget {
     );
 
     if (ok == true) {
-      final success = await StorageService.deleteReport(report.id);
+      bool success = false;
+      try {
+        success = await ApiService.deleteTicket(report.id);
+      } catch (e) {
+        print('Error deleting via API: $e');
+        success = false;
+      }
+
+      // Fallback to local delete if API delete fails
+      if (!success) {
+        success = await StorageService.deleteReport(report.id);
+      }
+
       if (success) {
         if (onDeleted != null) {
           onDeleted!();
@@ -86,6 +117,12 @@ class ReportCard extends StatelessWidget {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(I18n.t('toast.reportDeleted'))),
+          );
+        }
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(I18n.t('error.saving', {'0': 'Failed to delete report'}))),
           );
         }
       }
@@ -236,7 +273,24 @@ class ReportCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
+                      // Submitted by (if available)
+                      if (report.submittedBy != null) ...[
+                        Row(
+                          children: [
+                            Icon(Icons.person, size: 14, color: cs.onSurface.withOpacity(0.6)),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Submitted by ${report.submittedBy}',
+                                style: TextStyle(fontSize: 12, color: cs.onSurface.withOpacity(0.7)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       // Status indicators
                       Row(
                         children: [
@@ -343,7 +397,9 @@ class ReportCard extends StatelessWidget {
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              '${report.location.lat.toStringAsFixed(4)}, ${report.location.lng.toStringAsFixed(4)}',
+                              report.address != null && report.address!.isNotEmpty
+                                  ? report.address!
+                                  : '${report.location.lat.toStringAsFixed(4)}, ${report.location.lng.toStringAsFixed(4)}',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: cs.onSurface.withOpacity(0.6),
@@ -374,40 +430,36 @@ class ReportCard extends StatelessWidget {
                     }
                   },
                   itemBuilder: (_) => [
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 0,
                       child: Row(
                         children: [
-                          Icon(Icons.visibility),
-                          SizedBox(width: 8),
-                          Text(
-                            'View Details',
-                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
+                          const Icon(Icons.visibility),
+                          const SizedBox(width: 8),
+                          Text(I18n.t('btn.viewDetails')),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 1,
                       child: Row(
                         children: [
-                          Icon(Icons.update),
-                          SizedBox(width: 8),
-                          Text(
-                            'Update Status',
-                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
+                          const Icon(Icons.update),
+                          const SizedBox(width: 8),
+                          Text(I18n.t('report.updateStatus')),
                         ],
                       ),
                     ),
-                    const PopupMenuItem(
+                    PopupMenuItem(
                       value: 2,
                       child: Row(
                         children: [
-                          Icon(Icons.delete, color: Colors.red),
-                          SizedBox(width: 8),
+                          const Icon(Icons.delete, color: Colors.red),
+                          const SizedBox(width: 8),
                           Text(
-                            'Delete',
-                            style: TextStyle(color: Colors.red),
-                          ), // TODO: Move to i18n but need to handle dynamic text in popup menu
+                            I18n.t('report.delete'),
+                            style: const TextStyle(color: Colors.red),
+                          ),
                         ],
                       ),
                     ),

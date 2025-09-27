@@ -1,37 +1,53 @@
-from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, UploadFile, File, Form, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.ticket_service import TicketService, SeverityLevel
 from app.models.ticket_model import User
 from app.services.global_ai import get_ai_service
-import os, uuid, logging
+from app.utils import make_image_url, normalize_image_path_for_url
+from pathlib import Path
+import logging, uuid
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-UPLOAD_DIR = "static/uploads"
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+UPLOAD_DIR = Path("static") / "uploads"
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 @router.post("/report")
 async def report_issue(
-    user_id: str = Form(...),
+    user_id: Optional[str] = Form(None),
+    user_name: Optional[str] = Form(None),
     latitude: float = Form(...),
     longitude: float = Form(...),
+    address: Optional[str] = Form(None),
     description: str = Form(""),
     image: UploadFile = File(...),
+    request: Request = None,
     db: Session = Depends(get_db)
 ):
     logger.debug("Received report request")
     ticket_service = TicketService(db)
 
-    # Validate user
-    user = db.query(User).filter(User.id == user_id).first()
+    # Validate or create user
+    user = None
+    if user_id:
+        user = ticket_service.get_user(user_id)
     if not user:
-        logger.error(f"User with id {user_id} not found")
-        raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
-    logger.debug(f"User found: {user.name} ({user.email})")
+        # Create a guest user automatically
+        guest_email = f"guest-{uuid.uuid4()}@example.local"
+        guest_name = user_name or f"Guest-{str(uuid.uuid4())[:8]}"
+        try:
+            user = ticket_service.create_user(name=guest_name, email=guest_email)
+            logger.info(f"Created guest user: {user}")
+        except Exception as e:
+            logger.exception("Failed to create guest user")
+            raise HTTPException(status_code=500, detail="Failed to ensure user")
+
+    logger.debug(f"Using user: {user.name} ({user.email})")
 
     # Validate file type
     allowed_extensions = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp'}
@@ -40,7 +56,7 @@ async def report_issue(
         'application/octet-stream'  # Some cameras/mobile devices use this
     }
 
-    file_ext = os.path.splitext(image.filename.lower())[1]
+    file_ext = Path(image.filename).suffix.lower()
     if file_ext not in allowed_extensions:
         logger.error(f"Invalid file extension: {file_ext}")
         raise HTTPException(status_code=400, detail="Only image files are allowed")
@@ -51,12 +67,11 @@ async def report_issue(
 
     # Save uploaded image
     filename = f"{uuid.uuid4()}{file_ext}"
-    file_path = os.path.join(UPLOAD_DIR, filename)
+    file_path_obj = UPLOAD_DIR / filename
     try:
         content = await image.read()
-        with open(file_path, "wb") as f:
-            f.write(content)
-        logger.debug(f"Saved image to {file_path} ({len(content)} bytes)")
+        file_path_obj.write_bytes(content)
+        logger.debug(f"Saved image to {file_path_obj} ({len(content)} bytes)")
     except Exception as e:
         logger.exception("Failed to save uploaded image")
         raise HTTPException(status_code=500, detail="Failed to save uploaded image")
@@ -67,11 +82,11 @@ async def report_issue(
 
     # Run AI predictions
     try:
-        category = ai_service.classify_category(file_path)
+        category = ai_service.classify_category(str(file_path_obj))
         logger.debug(f"Classification: {category}")
 
         if category.lower() == "pothole":
-            severity_str, annotated_path = ai_service.detect_pothole_severity(file_path)
+            severity_str, annotated_path = ai_service.detect_pothole_severity(str(file_path_obj))
             logger.debug(f"Detection: severity={severity_str}, path={annotated_path}")
             severity = {
                 "High": SeverityLevel.HIGH,
@@ -87,20 +102,27 @@ async def report_issue(
         category = "Unknown"
         severity = SeverityLevel.NA
 
-    # Create ticket
+    # Create ticket (store relative posix path)
+    image_path_db = file_path_obj.as_posix()
     ticket = ticket_service.create_ticket(
         user_id=user.id,
-        image_path=file_path,
+        image_path=image_path_db,
         category=category,
         severity=severity,
         latitude=latitude,
         longitude=longitude,
-        description=description
+        description=description,
+        address=address
     )
     logger.info(f"Ticket created: {ticket.id} for user {user.id}")
 
+    # Normalize stored path and build absolute URL
+    rel_path = normalize_image_path_for_url(ticket.image_path)
+    image_url = make_image_url(rel_path, request)
+    
     response = {
         "ticket_id": ticket.id,
+        "id": ticket.id,
         "user_id": user.id,
         "user_name": user.name,
         "user_email": user.email,
@@ -108,7 +130,9 @@ async def report_issue(
         "severity": ticket.severity.value,
         "status": ticket.status.value,
         "description": ticket.description,
-        "image_path": ticket.image_path
+        "image_path": rel_path,
+        "image_url": image_url,
+        "address": ticket.address
     }
 
     logger.debug(f"Response: {response}")

@@ -9,6 +9,7 @@
   "btn.apply": "Apply",
   "btn.reset": "Reset",
   "btn.view": "View",
+  "btn.viewDetails": "View details",
   "label.language": "Language",
   "label.location": "Location",
   "label.createdAt": "Created At",

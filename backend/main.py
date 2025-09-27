@@ -3,6 +3,7 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
 from app.routes import report, tickets, analytics, users
 from app.services.global_ai import init_ai_service
@@ -43,6 +44,25 @@ logger.info("Database initialized.")
 UPLOAD_DIR = "static/uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# ----------------------
+# CORS - allow dashboard & emulator origins
+# ----------------------
+DEFAULT_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,http://10.0.2.2:3000,http://192.168.100.59:3000"
+origins_env = os.environ.get("FIXMATE_CORS_ORIGINS", DEFAULT_ORIGINS)
+allowed_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
+# Ensure common development origins are always allowed (localhost, emulator, LAN)
+for origin in ("http://localhost:3000", "http://127.0.0.1:3000", "http://10.0.2.2:3000", "http://192.168.100.59:3000"):
+    if origin not in allowed_origins:
+        allowed_origins.append(origin)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ----------------------
 # Include routers

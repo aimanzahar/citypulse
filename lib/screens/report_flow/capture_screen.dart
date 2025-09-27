@@ -54,24 +54,34 @@ class _CaptureScreenState extends State<CaptureScreen> {
 
   Future<void> _processImage(XFile image, ImageSource source) async {
     try {
-      // Get current position (Geolocator.Position)
+      // Get current position (optional - app can work without location)
       final position = await LocationService.getCurrentPosition();
 
-      if (position == null) {
+      // Create location data even if position is null (with default values)
+      LocationData? locationData;
+      if (position != null) {
+        locationData = LocationService.positionToLocationData(position);
+        print('Location acquired: ${locationData.lat}, ${locationData.lng}');
+      } else {
+        // Create a fallback location with zero coordinates
+        // This allows the app to continue working without location
+        locationData = LocationData(lat: 0.0, lng: 0.0, accuracy: null);
+        print(
+          'Using fallback location (0.0, 0.0) - location services unavailable',
+        );
+
+        // Show a non-blocking warning to the user
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
-                'Unable to get location. Please try again.',
+            const SnackBar(
+              content: Text(
+                'Location unavailable. Report will be created without GPS coordinates.',
               ), // TODO: Move to i18n
+              duration: Duration(seconds: 3),
             ),
           );
         }
-        return;
       }
-
-      // Convert Position -> LocationData (app model)
-      final locationData = LocationService.positionToLocationData(position);
 
       // Generate AI suggestion (seeded deterministic)
       final aiSuggestion = MockAIService.generateSuggestion(
@@ -113,10 +123,12 @@ class _CaptureScreenState extends State<CaptureScreen> {
         );
       }
     } catch (e) {
+      print('Critical error in image processing: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(I18n.t('error.imageProcessing', {'0': e.toString()})),
+            backgroundColor: Colors.red,
           ),
         );
       }

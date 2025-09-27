@@ -5,35 +5,58 @@ dayjs.extend(window.dayjs_plugin_relativeTime);
 const CATEGORY_LIST = ['pothole','streetlight','signage','trash','drainage','other'];
 const SEVERITIES = ['high','medium','low'];
 const STATUSES = ['submitted','in_progress','fixed'];
+const BACKEND_BASE = "http://192.168.100.59:8000";
 
 const SEVERITY_COLOR = { high:'#D32F2F', medium:'#F57C00', low:'#388E3C' };
 const STATUS_COLOR = { submitted:'#1976D2', in_progress:'#7B1FA2', fixed:'#455A64' };
 
 function fetchJSON(path){ return fetch(path).then(r=>r.json()); }
 
+// Fetch tickets from backend
+async function fetchTickets(){
+  const res = await fetch(`${BACKEND_BASE}/api/tickets`);
+  if(!res.ok) throw new Error('Failed to fetch tickets');
+  const data = await res.json();
+  return data;
+}
+
 // Normalize API data to expected format
 function normalizeReportData(report) {
-  // If it's already in the expected format (from demo data), return as is
+  // Already normalized demo format (has location.lat)
   if (report.location && report.location.lat !== undefined) {
-    return report;
+    return {
+      id: report.id || report.ticket_id || report.ticketId,
+      category: report.category || 'other',
+      severity: report.severity || 'low',
+      status: report.status || 'submitted',
+      notes: report.notes || report.description || '',
+      location: report.location,
+      createdAt: report.createdAt || report.created_at,
+      updatedAt: report.updatedAt || report.updated_at,
+      userId: report.userId || report.user_id,
+      userName: report.userName || report.user_name || null,
+      address: report.address || null,
+      image_url: report.image_url || report.imagePath || report.image_path || null
+    };
   }
 
-  // Convert API format to expected format
+  // Convert backend API format to the app format
   return {
-    id: report.ticket_id,
+    id: report.id || report.ticket_id || report.ticketId,
     category: report.category || 'other',
     severity: report.severity || 'low',
     status: report.status || 'submitted',
-    notes: report.description || '',
+    notes: report.description || report.notes || '',
     location: {
-      lat: report.latitude,
-      lng: report.longitude
+      lat: (report.latitude !== undefined ? report.latitude : (report.lat !== undefined ? report.lat : null)),
+      lng: (report.longitude !== undefined ? report.longitude : (report.lng !== undefined ? report.lng : null))
     },
-    createdAt: report.created_at,
-    updatedAt: report.updated_at,
-    // Add missing fields with defaults
-    userId: report.user_id,
-    imagePath: report.image_path
+    createdAt: report.created_at || report.createdAt,
+    updatedAt: report.updated_at || report.updatedAt,
+    userId: report.user_id || report.userId,
+    userName: report.user_name || report.userName || null,
+    address: report.address || null,
+    image_url: report.image_url || report.image_path || report.imagePath || null
   };
 }
 
@@ -86,31 +109,62 @@ function App(){
 
   const [heatEnabled,setHeatEnabled] = useState(false);
 
+  // simple toast container for non-blocking errors / retry actions
+  const toastContainerRef = useRef(null);
+  useEffect(()=> {
+    const c = document.createElement('div');
+    c.style.position = 'fixed';
+    c.style.right = '12px';
+    c.style.bottom = '12px';
+    c.style.zIndex = 9999;
+    toastContainerRef.current = c;
+    document.body.appendChild(c);
+    return ()=> { if(c.parentNode) c.parentNode.removeChild(c); };
+  }, []);
+
+  const showToast = (msg, actionLabel, action) => {
+    const c = toastContainerRef.current;
+    if(!c) { console.warn(msg); return; }
+    const el = document.createElement('div');
+    el.style.background = '#111';
+    el.style.color = '#fff';
+    el.style.padding = '8px 12px';
+    el.style.marginTop = '8px';
+    el.style.borderRadius = '6px';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+    el.style.display = 'flex';
+    el.style.alignItems = 'center';
+    el.textContent = msg;
+    if(actionLabel && action){
+      const btn = document.createElement('button');
+      btn.textContent = actionLabel;
+      btn.style.marginLeft = '12px';
+      btn.style.background = 'transparent';
+      btn.style.color = '#4FC3F7';
+      btn.style.border = 'none';
+      btn.style.cursor = 'pointer';
+      btn.onclick = ()=> { action(); if(el.parentNode) el.parentNode.removeChild(el); };
+      el.appendChild(btn);
+    }
+    c.appendChild(el);
+    setTimeout(()=> { if(el.parentNode) el.parentNode.removeChild(el); }, 8000);
+  };
+
+  const PLACEHOLDER_SRC = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dy=".3em" font-size="12" text-anchor="middle" fill="#6b7280">No image</text></svg>');
+
   useEffect(()=>{
-    // Try to fetch from backend API first, fallback to demo data
-    fetch('http://127.0.0.1:8000/api/tickets')
-      .then(r => r.ok ? r.json() : Promise.reject('API not available'))
+    setLoading(true);
+    fetchTickets()
       .then(data => {
-        console.log('Loaded data from API:', data.length, 'reports');
-        const normalizedData = data.map(normalizeReportData);
+        console.log('Loaded data from backend:', (Array.isArray(data) ? data.length : 0), 'reports');
+        const normalizedData = (data || []).map(normalizeReportData);
         setRawData(normalizedData);
         setLoading(false);
       })
       .catch(err => {
-        console.log('API not available, using demo data:', err);
-        return fetchJSON('./data/demo-reports.json');
-      })
-      .then(data => {
-        if (data) {
-          console.log('Loaded demo data:', data.length, 'reports');
-          // Demo data is already in the correct format, but normalize just in case
-          const normalizedData = data.map(normalizeReportData);
-          setRawData(normalizedData);
-        }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Error loading data:', err);
+        console.warn('Failed to load tickets from backend:', err);
+        showToast('Failed to load tickets from backend.');
+        setRawData([]);
         setLoading(false);
       });
   },[]);
@@ -254,65 +308,54 @@ function App(){
     });
   },[filtered]);
 
-  const cycleStatus = async (reportId)=>{
-    try {
-      // Find the current report to get its status
-      const currentReport = rawData.find(r => r.id === reportId);
-      if (!currentReport) return;
+  const availableStatuses = useMemo(()=>{
+    const s = new Set(STATUSES);
+    rawData.forEach(r=>{ if(r && r.status) s.add(r.status); });
+    return Array.from(s);
+  }, [rawData]);
 
-      const idx = STATUSES.indexOf(currentReport.status);
-      const nextStatus = STATUSES[(idx + 1) % STATUSES.length];
-
-      // Try to update via API first
-      const success = await fetch(`http://127.0.0.1:8000/api/tickets/${reportId}?new_status=${encodeURIComponent(nextStatus)}`, {
-        method: 'PATCH'
-      }).then(r => r.ok);
-
-      if (success) {
-        // If API update successful, refresh data from API
-        const response = await fetch('http://127.0.0.1:8000/api/tickets');
-        if (response.ok) {
-          const data = await response.json();
-          const normalizedData = data.map(normalizeReportData);
-          setRawData(normalizedData);
-
-          // Update selected item
-          const updatedReport = normalizedData.find(r => r.id === reportId);
-          setSelected(updatedReport || null);
-        }
+const updateTicketStatus = async (reportId, newStatus) => {
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/tickets/${reportId}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus })
+    });
+    if (res.ok) {
+      // Prefer using returned updated ticket if provided
+      let updated = null;
+      try { updated = await res.json(); } catch(e){ updated = null; }
+      if (updated) {
+        const normalized = normalizeReportData(updated);
+        setRawData(prev => prev.map(r => r.id === reportId ? normalized : r));
+        if (selected && selected.id === reportId) setSelected(normalized);
       } else {
-        console.error('Failed to update status via API');
-        // Fallback to local update
-        setRawData(prev=>{
-          const out = prev.map(r=>{
-            if(r.id !== reportId) return r;
-            return {...r, status: nextStatus, updatedAt: new Date().toISOString() };
-          });
-          if(selected && selected.id === reportId){
-            const newSel = out.find(r=>r.id === reportId);
-            setSelected(newSel || null);
-          }
-          return out;
-        });
+        // No body returned - update local state
+        setRawData(prev=> prev.map(r=> r.id === reportId ? {...r, status: newStatus, updatedAt: new Date().toISOString()} : r));
+        if(selected && selected.id === reportId) setSelected(prev => ({...prev, status: newStatus, updatedAt: new Date().toISOString()}));
       }
-    } catch (error) {
-      console.error('Error updating status:', error);
-      // Fallback to local update
-      setRawData(prev=>{
-        const out = prev.map(r=>{
-          if(r.id !== reportId) return r;
-          const idx = STATUSES.indexOf(r.status);
-          const ni = (idx + 1) % STATUSES.length;
-          return {...r, status: STATUSES[ni], updatedAt: new Date().toISOString() };
-        });
-        if(selected && selected.id === reportId){
-          const newSel = out.find(r=>r.id === reportId);
-          setSelected(newSel || null);
-        }
-        return out;
-      });
+      showToast('Status updated');
+      return true;
+    } else {
+      const text = await res.text().catch(()=> '');
+      console.warn('Status update failed', text);
+      showToast('Failed to update status', 'Retry', ()=> updateTicketStatus(reportId, newStatus));
+      return false;
     }
-  };
+  } catch (err) {
+    console.error('Error updating status:', err);
+    showToast('Failed to update status', 'Retry', ()=> updateTicketStatus(reportId, newStatus));
+    return false;
+  }
+};
+
+const cycleStatus = async (reportId) => {
+  const currentReport = rawData.find(r => r.id === reportId);
+  if (!currentReport) return;
+  const idx = availableStatuses.indexOf(currentReport.status);
+  const nextStatus = availableStatuses[(idx + 1) % availableStatuses.length] || STATUSES[(STATUSES.indexOf(currentReport.status) + 1) % STATUSES.length];
+  await updateTicketStatus(reportId, nextStatus);
+};
 
   const openInMaps = (r)=>{
     const lat = r.location.lat;
@@ -428,7 +471,11 @@ function App(){
             <div className="queue-list" role="list">
               {sortedQueue.map(r=>(
                 <div key={r.id} className="queue-item" role="listitem">
-                  <div className="thumb">{t(`category.${r.category}`) || r.category}</div>
+                  <div className="thumb">
+                    {(r.image_url || r.imagePath) ? (
+                      <img src={r.image_url || r.imagePath} alt={r.category} style={{width:64,height:48,objectFit:'cover',borderRadius:6}} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+                    ) : (t(`category.${r.category}`) || r.category)}
+                  </div>
                   <div className="item-main">
                     <div
                       className="item-title clickable"
@@ -443,7 +490,10 @@ function App(){
                       <span className="time-ago">{dayjs(r.createdAt).fromNow()}</span>
                     </div>
                   </div>
-                  <div className="item-actions">
+                  <div className="item-actions" style={{display:'flex',flexDirection:'column',gap:8,alignItems:'flex-end'}}>
+                    <select value={r.status} onChange={(e)=> updateTicketStatus(r.id, e.target.value)}>
+                      {availableStatuses.map(s => <option key={s} value={s}>{t(`status.${s}`) || s}</option>)}
+                    </select>
                     <button className="btn ghost" onClick={()=> { setSelected(r); }}>{t('btn.view') || 'View'}</button>
                   </div>
                 </div>
@@ -472,7 +522,11 @@ function App(){
             <div className="drawer-content" aria-live="polite">
               <button className="drawer-close" onClick={()=>setSelected(null)} aria-label="Close">×</button>
               <div className="drawer-header">
-                <div className="drawer-thumb large">{/* placeholder */}{t(`category.${selected.category}`) || selected.category}</div>
+                <div className="drawer-thumb large">
+                  {(selected.image_url || selected.imagePath) ? (
+                    <img src={selected.image_url || selected.imagePath} alt={selected.category} style={{width:88,height:64,objectFit:'cover',borderRadius:6}} onError={(e)=>{ e.currentTarget.style.display='none'; }} />
+                  ) : (t(`category.${selected.category}`) || selected.category)}
+                </div>
                 <div style={{marginLeft:12}}>
                   <h3 style={{margin:0}}>{t(`category.${selected.category}`) || selected.category}</h3>
                   <div style={{display:'flex',gap:8,alignItems:'center',marginTop:6}}>
@@ -486,14 +540,16 @@ function App(){
               <div className="drawer-body">
                 <p style={{marginTop:8}}><strong>{t('drawer.details') || 'Details'}</strong></p>
                 {selected.notes ? <p>{selected.notes}</p> : <p style={{opacity:0.7}}>{t('drawer.noNotes') || 'No additional notes'}</p>}
+                <p><strong>{t('label.submittedBy') || 'Submitted by'}:</strong> {selected.userName || (t('label.guest') || 'Guest')}</p>
+                <p><strong>{t('label.place') || 'Place'}:</strong> {selected.address ? selected.address : `${selected.location.lat.toFixed(5)}, ${selected.location.lng.toFixed(5)}`}</p>
                 <p><strong>{t('label.location') || 'Location'}:</strong> {selected.location.lat.toFixed(5)}, {selected.location.lng.toFixed(5)}</p>
                 <p><strong>{t('label.createdAt') || 'Created'}:</strong> {dayjs(selected.createdAt).format('YYYY-MM-DD HH:mm')}</p>
               </div>
 
               <div className="drawer-actions">
-                <button className="btn" onClick={()=>{ cycleStatus(selected.id); }}>
-                  {t('drawer.changeStatus') || 'Change Status'}
-                </button>
+                <select value={selected.status} onChange={(e)=> updateTicketStatus(selected.id, e.target.value)}>
+                  {availableStatuses.map(s => <option key={s} value={s}>{t(`status.${s}`) || s}</option>)}
+                </select>
                 <button className="btn secondary" onClick={()=>openInMaps(selected)}>
                   {t('drawer.openMap') || 'Open Map'}
                 </button>

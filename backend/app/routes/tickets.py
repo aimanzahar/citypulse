@@ -1,96 +1,81 @@
 # app/routes/tickets.py
 from typing import Optional, List
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.services.ticket_service import TicketService, TicketStatus, SeverityLevel
 from pydantic import BaseModel
+from app.utils import ticket_to_dict
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 class TicketStatusUpdate(BaseModel):
-    new_status: TicketStatus
+    status: TicketStatus
 
 # ----------------------
 # GET /tickets
 # ----------------------
 @router.get("/tickets", response_model=List[dict])
 def list_tickets(
+    request: Request,
     user_id: Optional[str] = Query(None, description="Filter by user ID"),
     category: Optional[str] = Query(None, description="Filter by category"),
     severity: Optional[SeverityLevel] = Query(None, description="Filter by severity"),
     status: Optional[TicketStatus] = Query(None, description="Filter by status"),
     db: Session = Depends(get_db)
 ):
+    """
+    Return all tickets by default. Optional query params may filter results.
+    Each item is serialized using ticket_to_dict(...) which guarantees:
+      - image_url is an absolute forward-slash URL
+      - created_at is ISO-8601 string
+      - consistent schema for dashboard & mobile clients
+    """
     service = TicketService(db)
     tickets = service.list_tickets(user_id=user_id, category=category, severity=severity, status=status)
-    return [
-        {
-            "ticket_id": t.id,
-            "user_id": t.user_id,
-            "category": t.category,
-            "severity": t.severity.value,
-            "status": t.status.value,
-            "description": t.description,
-            "latitude": t.latitude,
-            "longitude": t.longitude,
-            "image_path": t.image_path,
-            "created_at": t.created_at,
-            "updated_at": t.updated_at
-        } for t in tickets
-    ]
+    return [ticket_to_dict(t, request) for t in tickets]
 
 # ----------------------
 # GET /tickets/{ticket_id}
 # ----------------------
 @router.get("/tickets/{ticket_id}", response_model=dict)
-def get_ticket(ticket_id: str, db: Session = Depends(get_db)):
+def get_ticket(ticket_id: str, request: Request, db: Session = Depends(get_db)):
     service = TicketService(db)
     ticket = service.get_ticket(ticket_id)
     if not ticket:
         raise HTTPException(status_code=404, detail=f"Ticket {ticket_id} not found")
-    return {
-        "ticket_id": ticket.id,
-        "user_id": ticket.user_id,
-        "category": ticket.category,
-        "severity": ticket.severity.value,
-        "status": ticket.status.value,
-        "description": ticket.description,
-        "latitude": ticket.latitude,
-        "longitude": ticket.longitude,
-        "image_path": ticket.image_path,
-        "created_at": ticket.created_at,
-        "updated_at": ticket.updated_at
-    }
+    return ticket_to_dict(ticket, request)
 
 # ----------------------
-# PATCH /tickets/{ticket_id} - Update status
+# PATCH /tickets/{ticket_id}/status - Update status
 # ----------------------
-@router.patch("/tickets/{ticket_id}", response_model=dict)
+@router.patch("/tickets/{ticket_id}/status", response_model=dict)
 def update_ticket_status(
     ticket_id: str,
-    status_update: TicketStatusUpdate,  # JSON body with new_status
+    status_update: TicketStatusUpdate,  # JSON body with status
+    request: Request,
     db: Session = Depends(get_db)
 ):
     service = TicketService(db)
     try:
-        ticket = service.update_ticket_status(ticket_id, status_update.new_status)
+        ticket = service.update_ticket_status(ticket_id, status_update.status)
     except Exception as e:
         logger.error(f"Failed to update ticket status: {e}")
         raise HTTPException(status_code=400, detail=str(e))
-    return {
-        "ticket_id": ticket.id,
-        "user_id": ticket.user_id,
-        "category": ticket.category,
-        "severity": ticket.severity.value,
-        "status": ticket.status.value,
-        "description": ticket.description,
-        "latitude": ticket.latitude,
-        "longitude": ticket.longitude,
-        "image_path": ticket.image_path,
-        "created_at": ticket.created_at,
-        "updated_at": ticket.updated_at
-    }
+    return ticket_to_dict(ticket, request)
+
+# ----------------------
+# DELETE /tickets/{ticket_id} - Delete ticket + image
+# ----------------------
+@router.delete("/tickets/{ticket_id}", response_model=dict)
+def delete_ticket(ticket_id: str, db: Session = Depends(get_db)):
+    service = TicketService(db)
+    try:
+        service.delete_ticket(ticket_id)
+    except Exception as e:
+        logger.error(f"Failed to delete ticket {ticket_id}: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"deleted": True, "id": ticket_id}

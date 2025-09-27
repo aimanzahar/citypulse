@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/report.dart';
 import '../models/enums.dart';
@@ -8,14 +9,24 @@ import '../models/enums.dart';
 class ApiService {
   // Configure this to match your backend URL
   // Use localhost for web/desktop, network IP for mobile/emulator
-  static const String _baseUrl = 'http://192.168.100.59:8000/api';
-  static const String _uploadsUrl = 'http://192.168.100.59:8000/static/uploads';
+  static const String BASE_URL = 'http://192.168.100.59:8000';
+  static const String _baseUrl = '$BASE_URL/api';
+  static const String _uploadsUrl = '$BASE_URL/static/uploads';
 
-  // Create a user ID for this device if not exists
+  // Create a user ID for this device if not exists (persisted)
   static Future<String> _getOrCreateUserId() async {
-    // For now, generate a UUID for this device
-    // In a real app, this would be stored securely
-    return const Uuid().v4();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      const key = 'fixmate_user_id';
+      final existing = prefs.getString(key);
+      if (existing != null && existing.isNotEmpty) return existing;
+      final newId = Uuid().v4();
+      await prefs.setString(key, newId);
+      return newId;
+    } catch (e) {
+      // If SharedPreferences fails for any reason, fallback to an in-memory UUID
+      return Uuid().v4();
+    }
   }
 
   /// Create a new user
@@ -42,6 +53,9 @@ class ApiService {
     }
   }
 
+  /// Get or create the current device / user id used when submitting reports
+  static Future<String> getUserId() => _getOrCreateUserId();
+
   /// Submit a report to the backend
   static Future<String> submitReport({
     required double latitude,
@@ -49,6 +63,8 @@ class ApiService {
     required String description,
     required List<int> imageBytes,
     required String imageName,
+    String? userName,
+    String? address,
   }) async {
     try {
       final userId = await _getOrCreateUserId();
@@ -61,6 +77,8 @@ class ApiService {
       request.fields['latitude'] = latitude.toString();
       request.fields['longitude'] = longitude.toString();
       request.fields['description'] = description;
+      if (userName != null && userName.isNotEmpty) request.fields['user_name'] = userName;
+      if (address != null && address.isNotEmpty) request.fields['address'] = address;
 
       // Add the image file
       request.files.add(
@@ -101,6 +119,9 @@ class ApiService {
     }
   }
 
+  /// Preferred API name for fetching tickets (alias for getReports)
+  static Future<List<Report>> fetchTickets() => getReports();
+
   /// Get a single ticket by ID
   static Future<Report?> getReportById(String ticketId) async {
     try {
@@ -132,6 +153,24 @@ class ApiService {
     }
   }
 
+  /// Delete a ticket by ID
+  static Future<bool> deleteTicket(String ticketId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/tickets/$ticketId'),
+      );
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        return true;
+      } else {
+        print('Failed to delete ticket: ${response.statusCode} ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('Error deleting ticket: $e');
+      return false;
+    }
+  }
+
   /// Get analytics data
   static Future<Map<String, dynamic>> getAnalytics() async {
     try {
@@ -150,22 +189,30 @@ class ApiService {
 
   /// Convert API ticket response to Report model
   static Report _convertApiTicketToReport(Map<String, dynamic> data) {
+    final id = (data['id'] ?? data['ticket_id'] ?? '').toString();
+    final imageUrl = (data['image_url'] as String?) ??
+        (data['image_path'] != null
+            ? '$_uploadsUrl/${(data['image_path'] as String).split('/').last}'
+            : null);
+
     return Report(
-      id: data['ticket_id'] ?? '',
+      id: id,
       category: _normalizeCategory(data['category'] ?? ''),
       severity: _normalizeSeverity(data['severity'] ?? 'N/A'),
       status: _normalizeStatus(data['status'] ?? 'New'),
-      photoPath: data['image_path'] != null
-          ? '$_uploadsUrl/${data['image_path'].split('/').last}'
-          : null,
+      // For API-provided tickets prefer imageUrl; photoPath is for local files
+      photoPath: null,
+      imageUrl: imageUrl,
       location: LocationData(
         lat: (data['latitude'] as num?)?.toDouble() ?? 0.0,
         lng: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       ),
-      createdAt: data['created_at'] ?? DateTime.now().toIso8601String(),
-      updatedAt: data['updated_at'] ?? DateTime.now().toIso8601String(),
-      deviceId: 'api-${data['ticket_id'] ?? ''}',
+      createdAt: (data['created_at'] ?? data['createdAt'] ?? DateTime.now().toIso8601String()) as String,
+      updatedAt: (data['updated_at'] ?? data['updatedAt'] ?? DateTime.now().toIso8601String()) as String,
+      deviceId: data['user_id'] != null ? data['user_id'].toString() : 'api-$id',
       notes: data['description'] as String?,
+      address: data['address'] as String?,
+      submittedBy: data['user_name'] as String?,
       source: 'api',
       aiSuggestion: AISuggestion(
         category: _normalizeCategory(data['category'] ?? ''),

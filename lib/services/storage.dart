@@ -57,6 +57,8 @@ class StorageService {
           description: report.notes ?? '',
           imageBytes: imageBytes,
           imageName: '${report.id}.jpg',
+          userName: report.submittedBy,
+          address: report.address,
         );
         return true;
       }
@@ -85,32 +87,38 @@ class StorageService {
   /// Delete a report from storage (API first, fallback to local)
   static Future<bool> deleteReport(String reportId) async {
     try {
-      // Try API first (note: API doesn't have delete endpoint, so this will always fallback)
-      final apiReport = await ApiService.getReportById(reportId);
-      if (apiReport != null) {
-        // For now, the API doesn't have a delete endpoint, so we can't delete from API
-        // This would need to be added to the backend
-        print('API delete not available, keeping local copy');
+      // Try API delete first
+      final apiDeleted = await ApiService.deleteTicket(reportId);
+      if (apiDeleted) {
+        // Clean up local copies if any
+        try {
+          final reports = await getReports();
+          final updatedReports = reports.where((r) => r.id != reportId).toList();
+          if (!kIsWeb) {
+            await _deletePhotoFile(reportId);
+          }
+          await _saveReportsList(updatedReports);
+        } catch (e) {
+          print('Error cleaning local copies after API delete: $e');
+        }
+        return true;
       }
     } catch (e) {
-      print('API not available: $e');
+      print('API delete failed or API not available: $e');
     }
 
-    // Fallback to local storage
+    // Fallback to local storage deletion
     try {
       final reports = await getReports();
       final updatedReports = reports.where((r) => r.id != reportId).toList();
 
-      // Delete photo file if it exists
-      if (kIsWeb) {
-        // On web, base64 is stored in memory, no file to delete
-      } else {
+      if (!kIsWeb) {
         await _deletePhotoFile(reportId);
       }
 
       return await _saveReportsList(updatedReports);
     } catch (e) {
-      print('Error deleting report: $e');
+      print('Error deleting report locally: $e');
       return false;
     }
   }

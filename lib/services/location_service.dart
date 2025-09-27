@@ -9,6 +9,13 @@ class LocationService {
       return await Geolocator.isLocationServiceEnabled();
     } catch (e) {
       print('Error checking location service: $e');
+      // Handle specific Android exceptions that can cause crashes
+      if (e.toString().contains('DeadSystemException') ||
+          e.toString().contains('DeadSystemRuntimeException') ||
+          e.toString().contains('SecurityException')) {
+        print('System-level location service error detected, returning false');
+        return false;
+      }
       return false;
     }
   }
@@ -19,6 +26,13 @@ class LocationService {
       return await Geolocator.checkPermission();
     } catch (e) {
       print('Error checking location permission: $e');
+      // Handle specific Android exceptions that can cause crashes
+      if (e.toString().contains('DeadSystemException') ||
+          e.toString().contains('DeadSystemRuntimeException') ||
+          e.toString().contains('SecurityException')) {
+        print('System-level permission error detected, returning denied');
+        return LocationPermission.denied;
+      }
       return LocationPermission.denied;
     }
   }
@@ -29,6 +43,15 @@ class LocationService {
       return await Geolocator.requestPermission();
     } catch (e) {
       print('Error requesting location permission: $e');
+      // Handle specific Android exceptions that can cause crashes
+      if (e.toString().contains('DeadSystemException') ||
+          e.toString().contains('DeadSystemRuntimeException') ||
+          e.toString().contains('SecurityException')) {
+        print(
+          'System-level permission request error detected, returning denied',
+        );
+        return LocationPermission.denied;
+      }
       return LocationPermission.denied;
     }
   }
@@ -58,14 +81,43 @@ class LocationService {
         return null;
       }
 
-      // Get current position
-      return await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 30),
-      );
+      // Get current position with multiple fallback strategies
+      return await _getPositionWithFallback();
     } catch (e) {
       print('Error getting current position: $e');
       return null;
+    }
+  }
+
+  /// Get position with fallback strategies to avoid crashes
+  static Future<Position?> _getPositionWithFallback() async {
+    try {
+      // Try high accuracy first with a reasonable timeout
+      return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 15),
+      );
+    } catch (e) {
+      print('High accuracy failed, trying medium accuracy: $e');
+      try {
+        // Fallback to medium accuracy
+        return await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.medium,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (e2) {
+        print('Medium accuracy failed, trying low accuracy: $e2');
+        try {
+          // Final fallback to low accuracy
+          return await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.low,
+            timeLimit: const Duration(seconds: 5),
+          );
+        } catch (e3) {
+          print('All accuracy levels failed: $e3');
+          return null;
+        }
+      }
     }
   }
 
@@ -181,7 +233,10 @@ class LocationService {
   }
 
   /// Get address from coordinates (placeholder - would need geocoding service)
-  static Future<String?> getAddressFromCoordinates(double lat, double lng) async {
+  static Future<String?> getAddressFromCoordinates(
+    double lat,
+    double lng,
+  ) async {
     // This is a placeholder implementation
     // In a real app, you would use a geocoding service like Google Maps API
     // or OpenStreetMap Nominatim API

@@ -12,7 +12,7 @@ import '../../l10n/i18n.dart';
 import '../../models/enums.dart';
 import '../../models/report.dart';
 import '../../services/location_service.dart';
-import '../../services/storage.dart';
+import '../../services/api_service.dart';
 import '../../widgets/severity_badge.dart';
 import '../../widgets/status_badge.dart';
 import '../my_reports/my_reports_screen.dart';
@@ -59,7 +59,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _refresh() async {
     setState(() => _loading = true);
-    final reports = await StorageService.getReports();
+    final reports = await ApiService.fetchTickets();
     setState(() {
       _allReports = reports;
       _loading = false;
@@ -324,6 +324,17 @@ class _MapScreenState extends State<MapScreen> {
       alignment: Alignment.center,
       child: Icon(Icons.photo, color: Colors.grey.shade600),
     );
+
+    // Prefer backend-provided image URL when available
+    if (r.imageUrl != null && r.imageUrl!.isNotEmpty) {
+      return Image.network(
+        r.imageUrl!,
+        width: 120,
+        height: 90,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => placeholder,
+      );
+    }
 
     if (kIsWeb) {
       if (r.base64Photo != null && r.base64Photo!.isNotEmpty) {
@@ -776,7 +787,17 @@ class MapReportDetails extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (kIsWeb && report.base64Photo != null)
+            if (report.imageUrl != null)
+              Image.network(
+                report.imageUrl!,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 180,
+                  color: Colors.grey.shade200,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.photo, size: 64),
+                ),
+              )
+            else if (kIsWeb && report.base64Photo != null)
               Image.memory(base64Decode(report.base64Photo!))
             else if (!kIsWeb && report.photoPath != null)
               Image.file(File(report.photoPath!))

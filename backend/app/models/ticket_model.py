@@ -46,6 +46,7 @@ class Ticket(Base):
     category = Column(String, nullable=False)
     severity = Column(Enum(SeverityLevel), nullable=False, default=SeverityLevel.NA)
     description = Column(String, default="")
+    address = Column(String, nullable=True)
     status = Column(Enum(TicketStatus), nullable=False, default=TicketStatus.NEW)
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)

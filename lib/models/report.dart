@@ -21,6 +21,9 @@ class Report {
   /// Base64 encoded photo for web platform
   final String? base64Photo;
 
+  /// Remote image URL provided by backend (absolute URL)
+  final String? imageUrl;
+
   /// Geographic location where the issue was reported
   final LocationData location;
 
@@ -38,6 +41,8 @@ class Report {
 
   /// Address or location description (placeholder for future use)
   final String? address;
+  /// Name of the user who submitted the report (API reports)
+  final String? submittedBy;
 
   /// Source of the photo ("camera" or "gallery")
   final String source;
@@ -61,12 +66,14 @@ class Report {
     required this.status,
     this.photoPath,
     this.base64Photo,
+    this.imageUrl,
     required this.location,
     required this.createdAt,
     required this.updatedAt,
     required this.deviceId,
     this.notes,
     this.address,
+    this.submittedBy,
     required this.source,
     this.editable = true,
     this.deletable = true,
@@ -89,6 +96,8 @@ class Report {
     String? photoPath,
     String? base64Photo,
     String? notes,
+    String? submittedBy,
+    String? address,
     required String source,
     required String deviceId,
     required AISuggestion aiSuggestion,
@@ -106,6 +115,8 @@ class Report {
       updatedAt: now,
       deviceId: deviceId,
       notes: notes,
+      address: address,
+      submittedBy: submittedBy,
       source: source,
       aiSuggestion: aiSuggestion,
     );
@@ -118,6 +129,7 @@ class Report {
     Status? status,
     String? photoPath,
     String? base64Photo,
+    String? imageUrl,
     LocationData? location,
     String? updatedAt,
     String? notes,
@@ -133,6 +145,7 @@ class Report {
       status: status ?? this.status,
       photoPath: photoPath ?? this.photoPath,
       base64Photo: base64Photo ?? this.base64Photo,
+      imageUrl: imageUrl ?? this.imageUrl,
       location: location ?? this.location,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -156,6 +169,7 @@ class Report {
       'status': status.key,
       'photoPath': photoPath,
       'base64Photo': base64Photo,
+      'imageUrl': imageUrl,
       'location': {
         'lat': location.lat,
         'lng': location.lng,
@@ -166,6 +180,7 @@ class Report {
       'deviceId': deviceId,
       'notes': notes,
       'address': address,
+      'submittedBy': submittedBy,
       'source': source,
       'editable': editable,
       'deletable': deletable,
@@ -187,6 +202,7 @@ class Report {
       status: (json['status'] as String).toStatus() ?? Status.submitted,
       photoPath: json['photoPath'] as String?,
       base64Photo: json['base64Photo'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       location: LocationData(
         lat: (json['location']['lat'] as num).toDouble(),
         lng: (json['location']['lng'] as num).toDouble(),
@@ -199,6 +215,7 @@ class Report {
       deviceId: json['deviceId'] as String,
       notes: json['notes'] as String?,
       address: json['address'] as String?,
+      submittedBy: json['submittedBy'] as String?,
       source: json['source'] as String,
       editable: json['editable'] as bool? ?? true,
       deletable: json['deletable'] as bool? ?? true,
