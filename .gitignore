@@ -12,11 +12,6 @@
 .swiftpm/
 migrate_working_dir/
 
-dashboard/.env
-dashboard/.env
-dashboard/.env
-
-
 # IntelliJ related
 *.iml
 *.ipr
@@ -51,6 +46,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Environment variables - contains sensitive API keys
 dashboard/.env
-dashboard/.env
-dashboard/.env
+.env
+.env.local
+.env.*.local
