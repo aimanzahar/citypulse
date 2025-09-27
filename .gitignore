@@ -26,6 +26,9 @@ migrate_working_dir/
 # AI Memory Bank - keep private
 .kilocode/
 
+#ignore all venv
+venv/
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id
