@@ -82,16 +82,37 @@ def ticket_to_dict(ticket, request=None) -> dict:
             logger.exception("Failed to build image_url")
             image_url = None
 
+    # Map backend enum values to dashboard expected values
+    severity_mapping = {
+        "N/A": "low",
+        "Low": "low",
+        "Medium": "medium",
+        "High": "high"
+    }
+
+    status_mapping = {
+        "New": "submitted",
+        "In Progress": "in_progress",
+        "Fixed": "fixed"
+    }
+
+    # Map category to expected values
+    category_mapping = {
+        "Unknown": "other",
+        "garbage": "trash"
+    }
+
     return {
         "id": ticket.id,
-        "category": ticket.category,
-        "severity": ticket.severity.value if getattr(ticket, "severity", None) else None,
-        "status": ticket.status.value if getattr(ticket, "status", None) else None,
-        "description": ticket.description,
+        "category": category_mapping.get(ticket.category, ticket.category) if ticket.category else "other",
+        "severity": severity_mapping.get(ticket.severity.value, "low") if getattr(ticket, "severity", None) else "low",
+        "status": status_mapping.get(ticket.status.value, "submitted") if getattr(ticket, "status", None) else "submitted",
+        "notes": ticket.description,  # Map description to notes
         "user_id": ticket.user_id,
-        "user_name": ticket.user.name if getattr(ticket, "user", None) else None,
+        "userName": ticket.user.name if getattr(ticket, "user", None) else None,
         "user_email": ticket.user.email if getattr(ticket, "user", None) else None,
-        "created_at": created,
+        "createdAt": created,  # Map created_at to createdAt
+        "updatedAt": getattr(ticket, "updated_at", None).isoformat() if getattr(ticket, "updated_at", None) else created,
         "latitude": ticket.latitude,
         "longitude": ticket.longitude,
         "address": ticket.address,

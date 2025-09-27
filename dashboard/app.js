@@ -2,10 +2,12 @@
 const { useState, useEffect, useRef, useMemo } = React;
 dayjs.extend(window.dayjs_plugin_relativeTime);
 
-const CATEGORY_LIST = ['pothole','streetlight','signage','trash','drainage','other'];
+console.log('Dashboard app.js loaded, BACKEND_BASE:', BACKEND_BASE);
+
+const CATEGORY_LIST = ['pothole','streetlight','signage','trash','garbage','drainage','other'];
 const SEVERITIES = ['high','medium','low'];
 const STATUSES = ['submitted','in_progress','fixed'];
-const BACKEND_BASE = "http://192.168.100.59:8000";
+const BACKEND_BASE = "http://127.0.0.1:8000";
 
 const SEVERITY_COLOR = { high:'#D32F2F', medium:'#F57C00', low:'#388E3C' };
 const STATUS_COLOR = { submitted:'#1976D2', in_progress:'#7B1FA2', fixed:'#455A64' };
@@ -14,49 +16,40 @@ function fetchJSON(path){ return fetch(path).then(r=>r.json()); }
 
 // Fetch tickets from backend
 async function fetchTickets(){
-  const res = await fetch(`${BACKEND_BASE}/api/tickets`);
-  if(!res.ok) throw new Error('Failed to fetch tickets');
-  const data = await res.json();
-  return data;
+  console.log('Fetching tickets from:', `${BACKEND_BASE}/api/tickets`);
+  try {
+    const res = await fetch(`${BACKEND_BASE}/api/tickets`);
+    console.log('Response status:', res.status);
+    if(!res.ok) throw new Error(`Failed to fetch tickets: ${res.status}`);
+    const data = await res.json();
+    console.log('Fetched data:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching tickets:', error);
+    throw error;
+  }
 }
 
 // Normalize API data to expected format
 function normalizeReportData(report) {
-  // Already normalized demo format (has location.lat)
-  if (report.location && report.location.lat !== undefined) {
-    return {
-      id: report.id || report.ticket_id || report.ticketId,
-      category: report.category || 'other',
-      severity: report.severity || 'low',
-      status: report.status || 'submitted',
-      notes: report.notes || report.description || '',
-      location: report.location,
-      createdAt: report.createdAt || report.created_at,
-      updatedAt: report.updatedAt || report.updated_at,
-      userId: report.userId || report.user_id,
-      userName: report.userName || report.user_name || null,
-      address: report.address || null,
-      image_url: report.image_url || report.imagePath || report.image_path || null
-    };
-  }
-
-  // Convert backend API format to the app format
+  // Backend is already returning data in correct format
+  // Just ensure all required fields are present
   return {
-    id: report.id || report.ticket_id || report.ticketId,
+    id: report.id,
     category: report.category || 'other',
     severity: report.severity || 'low',
     status: report.status || 'submitted',
-    notes: report.description || report.notes || '',
+    notes: report.notes || '',
     location: {
-      lat: (report.latitude !== undefined ? report.latitude : (report.lat !== undefined ? report.lat : null)),
-      lng: (report.longitude !== undefined ? report.longitude : (report.lng !== undefined ? report.lng : null))
+      lat: report.latitude,
+      lng: report.longitude
     },
-    createdAt: report.created_at || report.createdAt,
-    updatedAt: report.updated_at || report.updatedAt,
-    userId: report.user_id || report.userId,
-    userName: report.user_name || report.userName || null,
+    createdAt: report.createdAt,
+    updatedAt: report.updatedAt,
+    userId: report.user_id,
+    userName: report.userName || null,
     address: report.address || null,
-    image_url: report.image_url || report.image_path || report.imagePath || null
+    image_url: report.image_url || null
   };
 }
 
@@ -153,16 +146,35 @@ function App(){
   const PLACEHOLDER_SRC = 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="120" height="90"><rect width="100%" height="100%" fill="#e5e7eb"/><text x="50%" y="50%" dy=".3em" font-size="12" text-anchor="middle" fill="#6b7280">No image</text></svg>');
 
   useEffect(()=>{
+    console.log('Dashboard useEffect triggered - about to fetch tickets');
+
+    // First test if we can reach the backend at all
+    fetch(`${BACKEND_BASE}/test`)
+      .then(response => {
+        console.log('Test endpoint response:', response.status);
+        return response.json();
+      })
+      .then(testData => {
+        console.log('Test data:', testData);
+      })
+      .catch(testErr => {
+        console.error('Test request failed:', testErr);
+      });
+
     setLoading(true);
     fetchTickets()
       .then(data => {
         console.log('Loaded data from backend:', (Array.isArray(data) ? data.length : 0), 'reports');
+        console.log('Raw data received:', data);
         const normalizedData = (data || []).map(normalizeReportData);
+        console.log('Normalized data:', normalizedData);
+        console.log('Sample normalized item:', JSON.stringify(normalizedData[0], null, 2));
         setRawData(normalizedData);
         setLoading(false);
       })
       .catch(err => {
-        console.warn('Failed to load tickets from backend:', err);
+        console.error('Failed to load tickets from backend:', err);
+        console.error('Error details:', err.message, err.stack);
         showToast('Failed to load tickets from backend.');
         setRawData([]);
         setLoading(false);
@@ -195,6 +207,12 @@ function App(){
       if(!appliedFilters.severities.has(r.severity)) return false;
       if(!appliedFilters.statuses.has(r.status)) return false;
       return true;
+    });
+    console.log('Filtered data:', out.length, 'tickets');
+    console.log('Applied filters:', {
+      categories: Array.from(appliedFilters.categories),
+      severities: Array.from(appliedFilters.severities),
+      statuses: Array.from(appliedFilters.statuses)
     });
     setFiltered(out);
   },[rawData, appliedFilters]);

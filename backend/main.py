@@ -48,17 +48,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # ----------------------
 # CORS - allow dashboard & emulator origins
 # ----------------------
-DEFAULT_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,http://10.0.2.2:3000,http://192.168.100.59:3000"
+DEFAULT_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,http://[::1]:3000,http://10.0.2.2:3000,http://192.168.100.59:3000"
 origins_env = os.environ.get("FIXMATE_CORS_ORIGINS", DEFAULT_ORIGINS)
 allowed_origins = [o.strip() for o in origins_env.split(",") if o.strip()]
 # Ensure common development origins are always allowed (localhost, emulator, LAN)
-for origin in ("http://localhost:3000", "http://127.0.0.1:3000", "http://10.0.2.2:3000", "http://192.168.100.59:3000"):
+for origin in ("http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000", "http://10.0.2.2:3000", "http://192.168.100.59:3000"):
     if origin not in allowed_origins:
         allowed_origins.append(origin)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],  # Allow all origins for development
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,6 +81,10 @@ except Exception as e:
 @app.get("/")
 def root():
     return {"message": "Welcome to FixMate Backend API! Visit /docs for API documentation."}
+
+@app.get("/test")
+def test():
+    return {"status": "Backend is working", "timestamp": "2025-09-27T10:12:41"}
 
 print("✅ FastAPI server setup complete")
 
