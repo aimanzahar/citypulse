@@ -603,6 +603,9 @@ const cycleStatus = async (reportId) => {
           ) : null}
         </div>
 
+        {/* Chatbot */}
+        <Chatbot />
+
       </div>
 
     </div>
