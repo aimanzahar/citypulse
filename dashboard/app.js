@@ -446,10 +446,10 @@ const cycleStatus = async (reportId) => {
             <h3>{t('dashboard.filters') || 'Filters'}</h3>
 
             <div className="filter-group">
-              <div className="row space-between"><strong>{t('filter.category') || 'Category'}</strong></div>
+              <div className="row"><strong>{t('filter.category') || 'Category'}</strong></div>
               <div className="checkbox-row" aria-label="categories">
                 {CATEGORY_LIST.map(cat=>(
-                  <label key={cat} style={{display:'flex',alignItems:'center',gap:8}}>
+                  <label key={cat}>
                     <input type="checkbox"
                       checked={formCategories.has(cat)}
                       onChange={()=> toggleSet(setFormCategories, formCategories, cat)}
@@ -461,7 +461,7 @@ const cycleStatus = async (reportId) => {
             </div>
 
             <div className="filter-group">
-              <div className="row space-between"><strong>{t('filter.severity') || 'Severity'}</strong></div>
+              <div className="row"><strong>{t('filter.severity') || 'Severity'}</strong></div>
               <div className="multi-select">
                 {SEVERITIES.map(s=>(
                   <button key={s} className={`chip severity-${s}`} onClick={()=> toggleSet(setFormSeverities, formSeverities, s)} aria-pressed={formSeverities.has(s)}>
@@ -472,7 +472,7 @@ const cycleStatus = async (reportId) => {
             </div>
 
             <div className="filter-group">
-              <div className="row space-between"><strong>{t('filter.status') || 'Status'}</strong></div>
+              <div className="row"><strong>{t('filter.status') || 'Status'}</strong></div>
               <div className="multi-select">
                 {STATUSES.map(s=>(
                   <button key={s} className={`chip status-${s}`} onClick={()=> toggleSet(setFormStatuses, formStatuses, s)} aria-pressed={formStatuses.has(s)}>
@@ -483,20 +483,20 @@ const cycleStatus = async (reportId) => {
             </div>
 
             <div className="filter-group">
-              <div className="row space-between"><strong>{t('filter.dateRange') || 'Date Range'}</strong></div>
-              <div style={{display:'flex',gap:8,marginTop:8}}>
-                <div style={{display:'flex',flexDirection:'column'}}>
-                  <label style={{fontSize:12}}>{t('filter.dateFrom') || 'From'}</label>
+              <div className="row"><strong>{t('filter.dateRange') || 'Date Range'}</strong></div>
+              <div className="date-inputs">
+                <div className="date-input-group">
+                  <label>{t('filter.dateFrom') || 'From'}</label>
                   <input type="date" value={formFrom} onChange={e=>setFormFrom(e.target.value)} />
                 </div>
-                <div style={{display:'flex',flexDirection:'column'}}>
-                  <label style={{fontSize:12}}>{t('filter.dateTo') || 'To'}</label>
+                <div className="date-input-group">
+                  <label>{t('filter.dateTo') || 'To'}</label>
                   <input type="date" value={formTo} onChange={e=>setFormTo(e.target.value)} />
                 </div>
               </div>
             </div>
 
-            <div style={{display:'flex',gap:8,marginTop:12}}>
+            <div className="button-group">
               <button className="btn" onClick={applyFilters}>{t('btn.apply') || 'Apply'}</button>
               <button className="btn secondary" onClick={resetFilters}>{t('btn.reset') || 'Reset'}</button>
             </div>
