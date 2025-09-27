@@ -31,31 +31,64 @@ function Chatbot() {
   useEffect(() => {
     // For security, API keys should never be hardcoded in frontend code
     // In production, use a backend service or build-time replacement
-    const loadConfig = () => {
+    const loadConfig = async () => {
       // Check if we're in development mode (localhost)
       const isDevelopment = window.location.hostname === 'localhost' ||
                            window.location.hostname === '127.0.0.1';
 
       if (isDevelopment) {
-        // In development, try to load from environment or show setup message
+        // In development, load from secure backend endpoint
         console.log('Development mode detected');
-        console.log('Please ensure your .env file is properly configured');
-        console.log('For security, consider using a backend service in production');
+        console.log('Loading configuration from backend server...');
 
-        // For now, we'll use a placeholder that should be replaced
-        // In a real app, this would be handled by build tools
-        setConfig({
-          OPENROUTER_API_KEY: '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',
-          OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
-          OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
-        });
+        try {
+          const response = await fetch('http://localhost:3001/api/chatbot-config');
+          if (response.ok) {
+            const configData = await response.json();
+
+            // Validate that we have an API key
+            if (!configData.OPENROUTER_API_KEY) {
+              throw new Error('API key not found in backend configuration');
+            }
+
+            setConfig({
+              OPENROUTER_API_KEY: configData.OPENROUTER_API_KEY,
+              OPENROUTER_BASE_URL: configData.OPENROUTER_BASE_URL,
+              OPENROUTER_MODEL: configData.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
+              OPENROUTER_REASONING: (configData.OPENROUTER_REASONING === true || configData.OPENROUTER_REASONING === 'true')
+            });
+
+            console.log('Configuration loaded from backend server successfully');
+          } else {
+            const errorData = await response.json();
+            throw new Error(`Backend server error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Could not load configuration from backend:', error.message);
+          console.log('Please make sure the Flask server is running on port 3001');
+          console.log('Start the server with: python server.py');
+
+          // Show user-friendly error message
+          setTimeout(() => {
+            alert('Chatbot configuration could not be loaded. Please make sure the backend server is running on port 3001.');
+          }, 1000);
+
+          // Set config to indicate backend is not available
+          setConfig({
+            OPENROUTER_API_KEY: null,
+            OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
+            OPENROUTER_MODEL: 'deepseek/deepseek-chat-v3.1:free',
+            OPENROUTER_REASONING: true
+          });
+        }
       } else {
         // In production, this should come from a secure backend endpoint
         console.log('Production mode - configuration should come from backend');
         setConfig({
           OPENROUTER_API_KEY: 'CONFIGURE_BACKEND_ENDPOINT',
           OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
-          OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
+          OPENROUTER_MODEL: 'deepseek/deepseek-chat-v3.1:free',
+          OPENROUTER_REASONING: true
         });
       }
     };
@@ -75,26 +108,73 @@ function Chatbot() {
     }
   }, [config]);
 
-  // Function to clean up markdown formatting from AI responses
-  const cleanMarkdown = (text) => {
-    return text
-      // Remove headers (### text)
-      .replace(/^###\s+/gm, '')
-      .replace(/^##\s+/gm, '')
-      .replace(/^#\s+/gm, '')
-      // Convert bold/italic (*text*) to readable format
-      .replace(/\*([^*]+)\*/g, '$1')
-      // Remove extra asterisks
-      .replace(/\*{2,}/g, '')
-      // Convert bullet points (-) to readable format
-      .replace(/^- /gm, '• ')
-      // Clean up multiple spaces but preserve line breaks
-      .replace(/ {2,}/g, ' ')
-      // Trim each line while preserving line breaks
-      .split('\n')
-      .map(line => line.trim())
-      .join('\n')
-      .trim();
+  // Basic sanitizer to allow simple formatting but prevent script injection
+  const sanitizeHtml = (html) => {
+    const div = document.createElement('div');
+    div.textContent = html;
+    let safe = div.innerHTML;
+    // allow minimal formatting: bold, italics, lists, line breaks
+    safe = safe
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(\n\s*<li>.*<\/li>)+/g, (m) => `<ul>${m.replace(/\n/g, '')}</ul>`) // group list items
+      .replace(/\n/g, '<br/>');
+    return safe;
+  };
+
+  // Fetch real ticket data from backend
+  const fetchTicketStats = async () => {
+    try {
+      console.log('Fetching real ticket statistics...');
+      const response = await fetch('http://localhost:3001/api/ticket-stats');
+
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('Real ticket stats fetched:', stats);
+        return stats;
+      } else {
+        console.error('Failed to fetch ticket stats:', response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching ticket stats:', error);
+      return null;
+    }
+  };
+
+  // Fetch tickets with location information
+  const fetchTicketLocations = async (severity = 'all') => {
+    try {
+      console.log(`Fetching ${severity} severity ticket locations...`);
+      const response = await fetch(`http://localhost:3001/api/ticket-locations?severity=${severity}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`${severity} severity ticket locations fetched:`, data);
+
+        // Debug: Check what location data looks like
+        if (data && data.tickets && data.tickets.length > 0) {
+          console.log('Sample ticket location_info:', data.tickets[0].location_info);
+        }
+
+        return data;
+      } else {
+        console.error('Failed to fetch ticket locations:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching ticket locations:', error);
+      return null;
+    }
+  };
+
+  // Utility: rudimentary intent check for routing queries
+  const isRouteIntent = (text) => {
+    const lc = (text || '').toLowerCase();
+    return /(route|optimal route|best route|path|navigate|order.*ticket|plan.*route)/.test(lc);
   };
 
   // Send message to OpenRouter API
@@ -108,6 +188,18 @@ function Chatbot() {
       return;
     }
 
+    // Check if API key is available
+    if (!config.OPENROUTER_API_KEY) {
+      console.error('API key not available. Backend server may not be running.');
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: 'Sorry, the chatbot is not properly configured. Please make sure the backend server is running on port 3001.',
+        timestamp: new Date()
+      }]);
+      return;
+    }
+
     console.log('Sending message with config:', {
       baseURL: config.OPENROUTER_BASE_URL,
       model: config.OPENROUTER_MODEL,
@@ -117,6 +209,15 @@ function Chatbot() {
     setIsLoading(true);
 
     try {
+      // Fetch real ticket data to provide accurate context
+      const ticketStats = await fetchTicketStats();
+
+      // Fetch location information for ALL severities
+      const locationData = await fetchTicketLocations('all');
+
+      // Debug logging for location data
+      console.log('Location data fetched:', locationData);
+
       const requestHeaders = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.OPENROUTER_API_KEY}`,
@@ -132,6 +233,67 @@ function Chatbot() {
         'X-Title': requestHeaders['X-Title']
       });
 
+      // Create system prompt with real data
+      let systemPrompt = `You are a helpful assistant for the CityPulse Dashboard - a city reporting system. You help users understand dashboard features, city reports, and provide general assistance. Keep responses concise, helpful, and use plain text without markdown formatting, headers, or special characters.`;
+
+      // Add real data context if available
+      if (ticketStats && !ticketStats.error) {
+        systemPrompt += `\n\nIMPORTANT: Use the following REAL DATA from the system instead of making up information:
+
+Current Ticket Statistics:
+- Total tickets: ${ticketStats.total_tickets}
+- High severity tickets: ${ticketStats.high_severity_count}
+- Active tickets (submitted + in progress): ${ticketStats.active_tickets_count}
+- Severity breakdown: ${JSON.stringify(ticketStats.severity_breakdown)}
+- Status breakdown: ${JSON.stringify(ticketStats.status_breakdown)}
+- Category breakdown: ${JSON.stringify(ticketStats.category_breakdown)}
+
+Always use these actual numbers when answering questions about ticket counts, severity levels, or statistics. Do not hallucinate or make up different numbers.`;
+
+        // Add location context if available
+        if (locationData && locationData.tickets && locationData.tickets.length > 0) {
+          console.log('Adding location context to system prompt...');
+          console.log('Number of tickets with location data:', locationData.tickets.length);
+
+          // Check if we have actual location information
+          const ticketsWithValidLocations = locationData.tickets.filter(ticket =>
+            ticket.location_info &&
+            ticket.location_info.city &&
+            ticket.location_info.city !== 'Unknown'
+          );
+
+          if (ticketsWithValidLocations.length > 0) {
+            systemPrompt += `\n\nLOCATION INFORMATION for ${locationData.severity_filter.toUpperCase()} severity tickets:`;
+
+            ticketsWithValidLocations.forEach((ticket, index) => {
+              const locationInfo = ticket.location_info || {};
+              const city = locationInfo.city || 'Unknown city';
+              const suburb = locationInfo.suburb || '';
+              const road = locationInfo.road || '';
+
+              systemPrompt += `\nTicket ${index + 1}: ${ticket.category} in ${city}`;
+              if (suburb) systemPrompt += `, ${suburb}`;
+              if (road) systemPrompt += ` near ${road}`;
+              systemPrompt += ` (${locationInfo.lat}, ${locationInfo.lng})`;
+            });
+
+            systemPrompt += `\n\nUse this location information when users ask about where tickets are located. Provide city/area names rather than just coordinates.`;
+          } else {
+            systemPrompt += `\n\nNote: Location details are currently being processed. For precise locations, direct users to check the CityPulse Dashboard map view.`;
+          }
+        } else {
+          console.log('No location data available or location data is empty');
+          systemPrompt += `\n\nNote: Location details are currently being processed. For precise locations, direct users to check the CityPulse Dashboard map view.`;
+        }
+
+        systemPrompt += ` If asked about data not available here, say you need to check the dashboard or that the information is not currently available.`;
+      } else {
+        systemPrompt += `\n\nNote: Real-time data is currently unavailable. Please check the dashboard for the most current information.`;
+      }
+
+      // Debug: Log the final system prompt
+      console.log('Final system prompt:', systemPrompt);
+
       const response = await fetch(`${config.OPENROUTER_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: requestHeaders,
@@ -140,7 +302,7 @@ function Chatbot() {
           messages: [
             {
               role: 'system',
-              content: `You are a helpful assistant for the CityPulse Dashboard - a city reporting system. You help users understand dashboard features, city reports, and provide general assistance. Keep responses concise, helpful, and use plain text without markdown formatting, headers, or special characters.`
+              content: systemPrompt
             },
             ...messages.filter(msg => msg.type !== 'system').map(msg => ({
               role: msg.type === 'user' ? 'user' : 'assistant',
@@ -151,8 +313,9 @@ function Chatbot() {
               content: userMessage
             }
           ],
-          max_tokens: 500,
-          temperature: 0.7
+          max_tokens: 700,
+          temperature: 0.5,
+          extra_body: config.OPENROUTER_REASONING ? { reasoning: true } : undefined
         })
       });
 
@@ -166,8 +329,27 @@ function Chatbot() {
       const data = await response.json();
       console.log('OpenRouter API response:', data);
 
+      let botResponse = null;
       if (data.choices && data.choices[0] && data.choices[0].message) {
-        const botResponse = cleanMarkdown(data.choices[0].message.content);
+        botResponse = sanitizeHtml(data.choices[0].message.content);
+
+        // If the user asked for a route, augment with computed route from dashboard server
+        if (isRouteIntent(userMessage)) {
+          try {
+            // Plan over ALL severities (no severity filter) and new tickets by default
+            const routeRes = await fetch('http://localhost:3001/api/optimal-route?status=submitted&limit=10');
+            if (routeRes.ok) {
+              const route = await routeRes.json();
+              if (route && !route.error && route.tickets && route.tickets.length) {
+                const steps = route.tickets.map((t, i) => `${i + 1}. ${t.category || 'ticket'} @ ${t.address || `${t.latitude},${t.longitude}`}`);
+                const routeText = `<strong>Suggested route</strong> (${route.tickets.length} stops, ~${route.total_distance_km} km). <a href="${route.google_maps_url || '#'}" target="_blank" rel="noopener">Open in Google Maps</a><br/>` + steps.map(s=>`- ${s}`).join('\n');
+                botResponse += `\n\n${routeText}`;
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch optimal route:', e);
+          }
+        }
 
         setMessages(prev => [...prev, {
           id: Date.now() + 1,
@@ -279,7 +461,7 @@ function Chatbot() {
               {message.type === 'bot' ? '🤖' : '👤'}
             </div>
             <div className="message-content">
-              <div className="message-text">{message.content}</div>
+              <div className="message-text" dangerouslySetInnerHTML={{ __html: message.content }} />
               <div className="message-time">
                 {formatTime(message.timestamp)}
               </div>

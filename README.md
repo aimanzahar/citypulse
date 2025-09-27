@@ -120,12 +120,76 @@ python -m http.server 3000
 - 🔄 Status management (submitted → in_progress → fixed)
 - 📱 Responsive design for desktop and mobile
 - 🌍 Bilingual support (English/Bahasa Malaysia)
+- 🤖 AI Chat Assistant with OpenRouter integration
 
 **Troubleshooting Dashboard:**
 - **Port 8000 in use?** Try: `uvicorn main:app --host 127.0.0.1 --port 8080 --reload` (then update dashboard to use port 8080)
 - **Port 3000 in use?** Try: `python -m http.server 3001`
 - **Backend connection fails?** Dashboard will automatically use demo data
 - **CORS issues?** Ensure backend allows requests from `http://localhost:3000`
+
+## 🤖 AI Chat Assistant Setup
+
+The dashboard includes an AI-powered chat assistant that uses OpenRouter API for intelligent responses about CityPulse features and functionality.
+
+### Prerequisites for Chat Assistant
+- **OpenRouter API Key** ([Get one at OpenRouter.ai](https://openrouter.ai/))
+- **Python Flask** for secure API key handling
+
+### 1. Configure Environment Variables
+
+Create a `.env` file in the `dashboard/` directory:
+
+```bash
+cd dashboard
+touch .env
+```
+
+Add your OpenRouter configuration to the `.env` file:
+```env
+# OpenRouter API Configuration
+OPENROUTER_API_KEY=sk-or-v1-your-actual-api-key-here
+OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
+OPENROUTER_MODEL=x-ai/grok-4-fast:free
+```
+
+**⚠️ Security Note:** Never commit your `.env` file to version control. The API key is loaded securely through the backend server.
+
+### 2. Start the Configuration Server
+
+The chat assistant uses a secure backend server to load API keys without exposing them in frontend code:
+
+```bash
+# Terminal 1 - Start the secure configuration server
+cd dashboard
+python server.py
+```
+
+✅ Configuration server will run on: `http://localhost:3001`
+
+### 3. Start the Dashboard
+
+```bash
+# Terminal 2 - Start the dashboard server
+cd dashboard
+python -m http.server 3000
+```
+
+### 4. Access the Dashboard with Chat Assistant
+
+Open your browser and navigate to: `http://localhost:3000`
+
+**Chat Assistant Features:**
+- 💬 Interactive AI assistant for CityPulse help
+- 🔒 Secure API key handling (never exposed in browser)
+- 🌍 Context-aware responses about dashboard features
+- 🚀 Quick action buttons for common questions
+
+**Chat Assistant Troubleshooting:**
+- **"API key not configured" error?** Ensure the Flask server (port 3001) is running
+- **"User not found" error?** Verify your OpenRouter API key is valid and has credits
+- **Chat not loading?** Check browser console for connection errors
+- **Slow responses?** The AI model may take time to initialize on first use
 
 ## 📱 API Endpoints
 
