@@ -108,26 +108,19 @@ function Chatbot() {
     }
   }, [config]);
 
-  // Function to clean up markdown formatting from AI responses
-  const cleanMarkdown = (text) => {
-    return text
-      // Remove headers (### text)
-      .replace(/^###\s+/gm, '')
-      .replace(/^##\s+/gm, '')
-      .replace(/^#\s+/gm, '')
-      // Convert bold/italic (*text*) to readable format
-      .replace(/\*([^*]+)\*/g, '$1')
-      // Remove extra asterisks
-      .replace(/\*{2,}/g, '')
-      // Convert bullet points (-) to readable format
-      .replace(/^- /gm, '• ')
-      // Clean up multiple spaces but preserve line breaks
-      .replace(/ {2,}/g, ' ')
-      // Trim each line while preserving line breaks
-      .split('\n')
-      .map(line => line.trim())
-      .join('\n')
-      .trim();
+  // Basic sanitizer to allow simple formatting but prevent script injection
+  const sanitizeHtml = (html) => {
+    const div = document.createElement('div');
+    div.textContent = html;
+    let safe = div.innerHTML;
+    // allow minimal formatting: bold, italics, lists, line breaks
+    safe = safe
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(\n\s*<li>.*<\/li>)+/g, (m) => `<ul>${m.replace(/\n/g, '')}</ul>`) // group list items
+      .replace(/\n/g, '<br/>');
+    return safe;
   };
 
   // Fetch real ticket data from backend
@@ -338,7 +331,7 @@ Always use these actual numbers when answering questions about ticket counts, se
 
       let botResponse = null;
       if (data.choices && data.choices[0] && data.choices[0].message) {
-        botResponse = cleanMarkdown(data.choices[0].message.content);
+        botResponse = sanitizeHtml(data.choices[0].message.content);
 
         // If the user asked for a route, augment with computed route from dashboard server
         if (isRouteIntent(userMessage)) {
@@ -349,7 +342,7 @@ Always use these actual numbers when answering questions about ticket counts, se
               const route = await routeRes.json();
               if (route && !route.error && route.tickets && route.tickets.length) {
                 const steps = route.tickets.map((t, i) => `${i + 1}. ${t.category || 'ticket'} @ ${t.address || `${t.latitude},${t.longitude}`}`);
-                const routeText = `Suggested route (${route.tickets.length} stops, ~${route.total_distance_km} km). Open in Google Maps: ${route.google_maps_url || 'N/A'}\n` + steps.join('\n');
+                const routeText = `<strong>Suggested route</strong> (${route.tickets.length} stops, ~${route.total_distance_km} km). <a href="${route.google_maps_url || '#'}" target="_blank" rel="noopener">Open in Google Maps</a><br/>` + steps.map(s=>`- ${s}`).join('\n');
                 botResponse += `\n\n${routeText}`;
               }
             }
@@ -468,7 +461,7 @@ Always use these actual numbers when answering questions about ticket counts, se
               {message.type === 'bot' ? '🤖' : '👤'}
             </div>
             <div className="message-content">
-              <div className="message-text">{message.content}</div>
+              <div className="message-text" dangerouslySetInnerHTML={{ __html: message.content }} />
               <div className="message-time">
                 {formatTime(message.timestamp)}
               </div>

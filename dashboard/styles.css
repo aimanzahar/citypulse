@@ -474,16 +474,19 @@ button.chip[aria-pressed="true"]{
   position: fixed;
   bottom: 20px;
   right: 20px;
-  width: 350px;
-  height: 500px;
+  width: 420px;
+  height: 600px;
   background: var(--panel);
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  overflow: hidden;
+  overflow: auto;
   border: 1px solid rgba(0, 0, 0, 0.05);
+  resize: both;
+  min-width: 320px;
+  min-height: 380px;
 }
 
 .chatbot-header {
@@ -569,6 +572,15 @@ button.chip[aria-pressed="true"]{
   word-wrap: break-word;
   white-space: pre-wrap;
   font-family: inherit;
+}
+
+/* Rich text inside bot messages */
+.message.bot .message-text p { margin: 0 0 8px; }
+.message.bot .message-text ul, .message.bot .message-text ol { margin: 4px 0 10px; padding-left: 18px; }
+.message.bot .message-text li { margin: 4px 0; }
+.message.bot .message-text h3, .message.bot .message-text h4, .message.bot .message-text h5 {
+  margin: 4px 0 8px;
+  font-weight: 700;
 }
 
 .message.user .message-text {
