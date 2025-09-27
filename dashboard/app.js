@@ -200,7 +200,7 @@ function App(){
     // init map once
     const map = L.map('map', { center:[3.1390,101.6869], zoom:12, preferCanvas:true });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom:19,
+      maxZoom:30,
       attribution:'© OpenStreetMap'
     }).addTo(map);
     mapRef.current = map;
