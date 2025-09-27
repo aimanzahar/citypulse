@@ -127,6 +127,54 @@ function Chatbot() {
       .trim();
   };
 
+  // Fetch real ticket data from backend
+  const fetchTicketStats = async () => {
+    try {
+      console.log('Fetching real ticket statistics...');
+      const response = await fetch('http://localhost:3001/api/ticket-stats');
+
+      if (response.ok) {
+        const stats = await response.json();
+        console.log('Real ticket stats fetched:', stats);
+        return stats;
+      } else {
+        console.error('Failed to fetch ticket stats:', response.status);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching ticket stats:', error);
+      return null;
+    }
+  };
+
+  // Fetch tickets with location information
+  const fetchTicketLocations = async (severity = 'high') => {
+    try {
+      console.log(`Fetching ${severity} severity ticket locations...`);
+      const response = await fetch(`http://localhost:3001/api/ticket-locations?severity=${severity}`);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`${severity} severity ticket locations fetched:`, data);
+
+        // Debug: Check what location data looks like
+        if (data && data.tickets && data.tickets.length > 0) {
+          console.log('Sample ticket location_info:', data.tickets[0].location_info);
+        }
+
+        return data;
+      } else {
+        console.error('Failed to fetch ticket locations:', response.status, response.statusText);
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching ticket locations:', error);
+      return null;
+    }
+  };
+
   // Send message to OpenRouter API
   const sendMessage = async (userMessage) => {
     if (!userMessage.trim() || isLoading) return;
@@ -159,6 +207,15 @@ function Chatbot() {
     setIsLoading(true);
 
     try {
+      // Fetch real ticket data to provide accurate context
+      const ticketStats = await fetchTicketStats();
+
+      // Fetch location information for high severity tickets
+      const locationData = await fetchTicketLocations('high');
+
+      // Debug logging for location data
+      console.log('Location data fetched:', locationData);
+
       const requestHeaders = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${config.OPENROUTER_API_KEY}`,
@@ -174,6 +231,67 @@ function Chatbot() {
         'X-Title': requestHeaders['X-Title']
       });
 
+      // Create system prompt with real data
+      let systemPrompt = `You are a helpful assistant for the CityPulse Dashboard - a city reporting system. You help users understand dashboard features, city reports, and provide general assistance. Keep responses concise, helpful, and use plain text without markdown formatting, headers, or special characters.`;
+
+      // Add real data context if available
+      if (ticketStats && !ticketStats.error) {
+        systemPrompt += `\n\nIMPORTANT: Use the following REAL DATA from the system instead of making up information:
+
+Current Ticket Statistics:
+- Total tickets: ${ticketStats.total_tickets}
+- High severity tickets: ${ticketStats.high_severity_count}
+- Active tickets (submitted + in progress): ${ticketStats.active_tickets_count}
+- Severity breakdown: ${JSON.stringify(ticketStats.severity_breakdown)}
+- Status breakdown: ${JSON.stringify(ticketStats.status_breakdown)}
+- Category breakdown: ${JSON.stringify(ticketStats.category_breakdown)}
+
+Always use these actual numbers when answering questions about ticket counts, severity levels, or statistics. Do not hallucinate or make up different numbers.`;
+
+        // Add location context if available
+        if (locationData && locationData.tickets && locationData.tickets.length > 0) {
+          console.log('Adding location context to system prompt...');
+          console.log('Number of tickets with location data:', locationData.tickets.length);
+
+          // Check if we have actual location information
+          const ticketsWithValidLocations = locationData.tickets.filter(ticket =>
+            ticket.location_info &&
+            ticket.location_info.city &&
+            ticket.location_info.city !== 'Unknown'
+          );
+
+          if (ticketsWithValidLocations.length > 0) {
+            systemPrompt += `\n\nLOCATION INFORMATION for ${locationData.severity_filter.toUpperCase()} severity tickets:`;
+
+            ticketsWithValidLocations.forEach((ticket, index) => {
+              const locationInfo = ticket.location_info || {};
+              const city = locationInfo.city || 'Unknown city';
+              const suburb = locationInfo.suburb || '';
+              const road = locationInfo.road || '';
+
+              systemPrompt += `\nTicket ${index + 1}: ${ticket.category} in ${city}`;
+              if (suburb) systemPrompt += `, ${suburb}`;
+              if (road) systemPrompt += ` near ${road}`;
+              systemPrompt += ` (${locationInfo.lat}, ${locationInfo.lng})`;
+            });
+
+            systemPrompt += `\n\nUse this location information when users ask about where tickets are located. Provide city/area names rather than just coordinates.`;
+          } else {
+            systemPrompt += `\n\nNote: Location details are currently being processed. For precise locations, direct users to check the CityPulse Dashboard map view.`;
+          }
+        } else {
+          console.log('No location data available or location data is empty');
+          systemPrompt += `\n\nNote: Location details are currently being processed. For precise locations, direct users to check the CityPulse Dashboard map view.`;
+        }
+
+        systemPrompt += ` If asked about data not available here, say you need to check the dashboard or that the information is not currently available.`;
+      } else {
+        systemPrompt += `\n\nNote: Real-time data is currently unavailable. Please check the dashboard for the most current information.`;
+      }
+
+      // Debug: Log the final system prompt
+      console.log('Final system prompt:', systemPrompt);
+
       const response = await fetch(`${config.OPENROUTER_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: requestHeaders,
@@ -182,7 +300,7 @@ function Chatbot() {
           messages: [
             {
               role: 'system',
-              content: `You are a helpful assistant for the CityPulse Dashboard - a city reporting system. You help users understand dashboard features, city reports, and provide general assistance. Keep responses concise, helpful, and use plain text without markdown formatting, headers, or special characters.`
+              content: systemPrompt
             },
             ...messages.filter(msg => msg.type !== 'system').map(msg => ({
               role: msg.type === 'user' ? 'user' : 'assistant',
