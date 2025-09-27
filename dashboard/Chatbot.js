@@ -31,24 +31,54 @@ function Chatbot() {
   useEffect(() => {
     // For security, API keys should never be hardcoded in frontend code
     // In production, use a backend service or build-time replacement
-    const loadConfig = () => {
+    const loadConfig = async () => {
       // Check if we're in development mode (localhost)
       const isDevelopment = window.location.hostname === 'localhost' ||
                            window.location.hostname === '127.0.0.1';
 
       if (isDevelopment) {
-        // In development, try to load from environment or show setup message
+        // In development, load from secure backend endpoint
         console.log('Development mode detected');
-        console.log('Please ensure your .env file is properly configured');
-        console.log('For security, consider using a backend service in production');
+        console.log('Loading configuration from backend server...');
 
-        // For now, we'll use a placeholder that should be replaced
-        // In a real app, this would be handled by build tools
-        setConfig({
-          OPENROUTER_API_KEY: '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',
-          OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
-          OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
-        });
+        try {
+          const response = await fetch('http://localhost:3001/api/chatbot-config');
+          if (response.ok) {
+            const configData = await response.json();
+
+            // Validate that we have an API key
+            if (!configData.OPENROUTER_API_KEY) {
+              throw new Error('API key not found in backend configuration');
+            }
+
+            setConfig({
+              OPENROUTER_API_KEY: configData.OPENROUTER_API_KEY,
+              OPENROUTER_BASE_URL: configData.OPENROUTER_BASE_URL,
+              OPENROUTER_MODEL: configData.OPENROUTER_MODEL
+            });
+
+            console.log('Configuration loaded from backend server successfully');
+          } else {
+            const errorData = await response.json();
+            throw new Error(`Backend server error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+          }
+        } catch (error) {
+          console.error('Could not load configuration from backend:', error.message);
+          console.log('Please make sure the Flask server is running on port 3001');
+          console.log('Start the server with: python server.py');
+
+          // Show user-friendly error message
+          setTimeout(() => {
+            alert('Chatbot configuration could not be loaded. Please make sure the backend server is running on port 3001.');
+          }, 1000);
+
+          // Set config to indicate backend is not available
+          setConfig({
+            OPENROUTER_API_KEY: null,
+            OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
+            OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
+          });
+        }
       } else {
         // In production, this should come from a secure backend endpoint
         console.log('Production mode - configuration should come from backend');
@@ -105,6 +135,18 @@ function Chatbot() {
     if (!config) {
       console.log('Config not loaded yet, waiting...');
       setTimeout(() => sendMessage(userMessage), 100);
+      return;
+    }
+
+    // Check if API key is available
+    if (!config.OPENROUTER_API_KEY) {
+      console.error('API key not available. Backend server may not be running.');
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        type: 'bot',
+        content: 'Sorry, the chatbot is not properly configured. Please make sure the backend server is running on port 3001.',
+        timestamp: new Date()
+      }]);
       return;
     }
 

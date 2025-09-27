@@ -12,6 +12,11 @@
 .swiftpm/
 migrate_working_dir/
 
+dashboard/.env
+dashboard/.env
+dashboard/.env
+
+
 # IntelliJ related
 *.iml
 *.ipr
@@ -46,3 +51,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+dashboard/.env
+dashboard/.env
+dashboard/.env
