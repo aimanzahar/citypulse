@@ -99,7 +99,12 @@ def ticket_to_dict(ticket, request=None) -> dict:
     # Map category to expected values
     category_mapping = {
         "Unknown": "other",
-        "garbage": "trash"
+        "garbage": "trash",
+        "broken_streetlight": "streetlight",
+        "drainage": "drainage",
+        "pothole": "pothole",
+        "signage": "signage",
+        "streetlight": "streetlight"
     }
 
     return {

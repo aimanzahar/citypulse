@@ -30,13 +30,28 @@ async function fetchTickets(){
   }
 }
 
+// Map backend category names to frontend filter categories
+function mapCategoryToFrontend(backendCategory) {
+  const categoryMapping = {
+    'broken_streetlight': 'streetlight',  // Backend AI model category
+    'garbage': 'trash',                   // Backend AI model category
+    // Direct matches (backend and frontend categories are the same)
+    'pothole': 'pothole',
+    'drainage': 'drainage',
+    'signage': 'signage',
+    'streetlight': 'streetlight',
+    'other': 'other'
+  };
+  return categoryMapping[backendCategory] || backendCategory || 'other';
+}
+
 // Normalize API data to expected format
 function normalizeReportData(report) {
   // Backend is already returning data in correct format
-  // Just ensure all required fields are present
+  // Just ensure all required fields are present and map categories
   return {
     id: report.id,
-    category: report.category || 'other',
+    category: mapCategoryToFrontend(report.category),
     severity: report.severity || 'low',
     status: report.status || 'submitted',
     notes: report.notes || '',
