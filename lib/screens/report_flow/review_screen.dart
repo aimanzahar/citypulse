@@ -4,6 +4,7 @@ import '../../l10n/i18n.dart';
 import '../../models/report.dart';
 import '../../models/enums.dart';
 import '../../services/storage.dart';
+import 'location_picker_screen.dart';
 
 class ReviewScreen extends StatefulWidget {
   final Report report;
@@ -23,14 +24,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
   late Category _selectedCategory;
   late Severity _selectedSeverity;
   late TextEditingController _notesController;
+  late Report _currentReport;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    _selectedCategory = widget.report.category;
-    _selectedSeverity = widget.report.severity;
-    _notesController = TextEditingController(text: widget.report.notes ?? '');
+    _currentReport = widget.report;
+    _selectedCategory = _currentReport.category;
+    _selectedSeverity = _currentReport.severity;
+    _notesController = TextEditingController(text: _currentReport.notes ?? '');
   }
 
   @override
@@ -46,7 +49,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
     try {
       // Update report with user selections
-      final updatedReport = widget.report.copyWith(
+      final updatedReport = _currentReport.copyWith(
         category: _selectedCategory,
         severity: _selectedSeverity,
         notes: _notesController.text.isEmpty ? null : _notesController.text,
@@ -200,7 +203,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             Text(
                               I18n.t('review.aiConfidence', {
                                 '0':
-                                    (widget.report.aiSuggestion.confidence *
+                                    (_currentReport.aiSuggestion.confidence *
                                             100)
                                         .round()
                                         .toString(),
@@ -243,7 +246,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                widget.report.aiSuggestion.category.displayName,
+                                _currentReport
+                                    .aiSuggestion
+                                    .category
+                                    .displayName,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -280,7 +286,10 @@ class _ReviewScreenState extends State<ReviewScreen> {
                               ),
                               const SizedBox(width: 8),
                               Text(
-                                widget.report.aiSuggestion.severity.displayName,
+                                _currentReport
+                                    .aiSuggestion
+                                    .severity
+                                    .displayName,
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -300,9 +309,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             onPressed: () {
                               setState(() {
                                 _selectedCategory =
-                                    widget.report.aiSuggestion.category;
+                                    _currentReport.aiSuggestion.category;
                                 _selectedSeverity =
-                                    widget.report.aiSuggestion.severity;
+                                    _currentReport.aiSuggestion.severity;
                               });
                             },
                             icon: const Icon(Icons.check_circle, size: 18),
@@ -320,7 +329,28 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton.icon(
-                            onPressed: () {},
+                            onPressed: () {
+                              // Navigate to manual editing screen
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => LocationPickerScreen(
+                                    initialLocation: _currentReport.location,
+                                    initialAddress: _currentReport.address,
+                                  ),
+                                ),
+                              ).then((result) {
+                                if (result != null && mounted) {
+                                  setState(() {
+                                    // Update the report with new location
+                                    _currentReport = _currentReport.copyWith(
+                                      location: result['location'],
+                                      address: result['address'],
+                                    );
+                                  });
+                                }
+                              });
+                            },
                             icon: const Icon(Icons.edit, size: 18),
                             label: Text(I18n.t('review.editManually')),
                             style: OutlinedButton.styleFrom(
@@ -615,6 +645,46 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 color: cs.onSurface,
                               ),
                         ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: () {
+                            // Navigate to location picker
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LocationPickerScreen(
+                                  initialLocation: _currentReport.location,
+                                  initialAddress: _currentReport.address,
+                                ),
+                              ),
+                            ).then((result) {
+                              if (result != null && mounted) {
+                                setState(() {
+                                  // Update the report with new location
+                                  _currentReport = _currentReport.copyWith(
+                                    location: result['location'],
+                                    address: result['address'],
+                                  );
+                                });
+                              }
+                            });
+                          },
+                          icon: Icon(Icons.edit, size: 16, color: cs.primary),
+                          label: Text(
+                            I18n.t('btn.editLocation'),
+                            style: TextStyle(
+                              color: cs.primary,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -647,14 +717,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${widget.report.location.lat.toStringAsFixed(6)}, ${widget.report.location.lng.toStringAsFixed(6)}',
+                            '${_currentReport.location.lat.toStringAsFixed(6)}, ${_currentReport.location.lng.toStringAsFixed(6)}',
                             style: Theme.of(context).textTheme.bodyLarge
                                 ?.copyWith(
                                   color: cs.onSurface,
                                   fontFamily: 'monospace',
                                 ),
                           ),
-                          if (widget.report.location.accuracy != null) ...[
+                          if (_currentReport.location.accuracy != null) ...[
                             const SizedBox(height: 12),
                             Row(
                               children: [
@@ -666,7 +736,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                 const SizedBox(width: 8),
                                 Text(
                                   I18n.t('review.accuracy', {
-                                    '0': widget.report.location.accuracy!
+                                    '0': _currentReport.location.accuracy!
                                         .toStringAsFixed(1),
                                   }),
                                   style: Theme.of(context).textTheme.bodySmall
