@@ -535,11 +535,11 @@ const cycleStatus = async (reportId) => {
                       <span className="time-ago">{dayjs(r.createdAt).fromNow()}</span>
                     </div>
                   </div>
-                  <div className="item-actions" style={{display:'flex',flexDirection:'column',gap:8,alignItems:'flex-end'}}>
-                    <select value={r.status} onChange={(e)=> updateTicketStatus(r.id, e.target.value)}>
+                  <div className="item-actions" style={{display:'flex',flexDirection:'row',gap:8,alignItems:'center',justifyContent:'flex-end',minWidth:'120px'}}>
+                    <select value={r.status} onChange={(e)=> updateTicketStatus(r.id, e.target.value)} style={{fontSize:'12px',padding:'4px 8px'}}>
                       {availableStatuses.map(s => <option key={s} value={s}>{t(`status.${s}`) || s}</option>)}
                     </select>
-                    <button className="btn ghost" onClick={()=> { setSelected(r); }}>{t('btn.view') || 'View'}</button>
+                    <button className="btn ghost" onClick={()=> { setSelected(r); }} style={{fontSize:'12px',padding:'4px 12px',whiteSpace:'nowrap'}}>{t('btn.view') || 'View'}</button>
                   </div>
                 </div>
               ))}
@@ -585,7 +585,7 @@ const cycleStatus = async (reportId) => {
               <div className="drawer-body">
                 <p style={{marginTop:8}}><strong>{t('drawer.details') || 'Details'}</strong></p>
                 {selected.notes ? <p>{selected.notes}</p> : <p style={{opacity:0.7}}>{t('drawer.noNotes') || 'No additional notes'}</p>}
-                <p><strong>{t('label.submittedBy') || 'Submitted by'}:</strong> {selected.userName || (t('label.guest') || 'Guest')}</p>
+                <p><strong>{t('label.submittedBy') || 'Submitted by'}:</strong> {selected.userName && !selected.userName.startsWith('Guest-') ? selected.userName : (t('label.anonymous') || 'Anonymous User')}</p>
                 <p><strong>{t('label.place') || 'Place'}:</strong> {selected.address ? selected.address : `${selected.location.lat.toFixed(5)}, ${selected.location.lng.toFixed(5)}`}</p>
                 <p><strong>{t('label.location') || 'Location'}:</strong> {selected.location.lat.toFixed(5)}, {selected.location.lng.toFixed(5)}</p>
                 <p><strong>{t('label.createdAt') || 'Created'}:</strong> {dayjs(selected.createdAt).format('YYYY-MM-DD HH:mm')}</p>

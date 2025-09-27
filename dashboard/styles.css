@@ -82,7 +82,7 @@ body{
 /* main area */
 .main{
   display:grid;
-  grid-template-columns:300px 1fr 340px;
+  grid-template-columns:300px 1fr 400px;
   gap:12px;
   align-items:stretch;
   flex:1;
@@ -114,6 +114,7 @@ body{
   background:#fafbfc;
   border-radius:8px;
   border:1px solid #e5e7eb;
+  overflow:hidden;
 }
 .filter-group:last-child{margin-bottom:0;}
 .checkbox-row{
@@ -240,11 +241,11 @@ button.chip[aria-pressed="true"]{
 .map-panel.no-reports .map-empty{display:flex}
 
 /* queue list */
-.queue-list{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:6px}
-.queue-item{display:flex;align-items:center;gap:12px;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:linear-gradient(180deg,#fff,#fbfdff)}
-.thumb{width:56px;height:56px;border-radius:6px;background:linear-gradient(180deg,#eef2ff,#fff);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:700}
-.item-main{flex:1;min-width:0}
-.item-title{font-weight:600;text-overflow:ellipsis;overflow:hidden;white-space:nowrap}
+.queue-list{display:flex;flex-direction:column;gap:8px;overflow:auto;padding-right:6px;max-height:calc(100vh - 200px)}
+.queue-item{display:flex;align-items:center;gap:12px;padding:8px;border-radius:8px;border:1px solid #eef2f7;background:linear-gradient(180deg,#fff,#fbfdff);min-height:48px}
+.thumb{width:56px;height:56px;border-radius:6px;background:linear-gradient(180deg,#eef2ff,#fff);display:flex;align-items:center;justify-content:center;color:#0f172a;font-weight:700;flex-shrink:0}
+.item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.item-title{font-weight:600;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;font-size:14px}
 .item-title.clickable{
   cursor:pointer;
   transition:all 0.2s ease;
@@ -258,8 +259,18 @@ button.chip[aria-pressed="true"]{
   transform:translateY(-1px);
   box-shadow:0 2px 8px rgba(14,165,164,0.15);
 }
-.item-meta{display:flex;gap:8px;align-items:center;margin-top:6px;font-size:12px;color:var(--muted)}
-.item-actions{display:flex;align-items:center}
+.item-meta{display:flex;gap:8px;align-items:center;margin-top:2px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.item-actions{display:flex;align-items:center;gap:8px;flex-shrink:0}
+
+/* Ensure proper spacing in queue items */
+.queue-item > * {
+  flex-shrink: 0;
+}
+
+.queue-item .item-main {
+  flex-shrink: 1;
+  min-width: 0;
+}
 
 /* drawer */
 .drawer{
@@ -309,12 +320,14 @@ button.chip[aria-pressed="true"]{
 
 .filter-group .date-inputs {
   display:flex;
-  gap:12px;
+  gap:8px;
   margin-top:8px;
+  align-items:flex-end;
 }
 
 .filter-group .date-input-group {
   flex:1;
+  min-width:0;
   display:flex;
   flex-direction:column;
 }
@@ -323,16 +336,19 @@ button.chip[aria-pressed="true"]{
   font-size:12px;
   font-weight:500;
   color:#6b7280;
-  margin-bottom:6px;
+  margin-bottom:4px;
+  white-space:nowrap;
 }
 
 .filter-group .date-input-group input[type="date"] {
-  padding:8px 12px;
+  padding:6px 8px;
   border:1px solid #d1d5db;
   border-radius:6px;
   font-size:14px;
   background:white;
   transition:border-color 0.2s ease, box-shadow 0.2s ease;
+  width:100%;
+  box-sizing:border-box;
 }
 
 .filter-group .date-input-group input[type="date"]:focus {
@@ -344,9 +360,15 @@ button.chip[aria-pressed="true"]{
 /* button group styling */
 .filter-group .button-group {
   display:flex;
-  gap:10px;
+  gap:8px;
   margin-top:16px;
   justify-content:flex-end;
+}
+
+.filter-group .button-group .btn {
+  padding:8px 16px;
+  font-size:13px;
+  min-width:60px;
 }
 
 /* small screens */
@@ -360,11 +382,31 @@ button.chip[aria-pressed="true"]{
   .panel{padding:16px}
   .filter-group .date-inputs {
     flex-direction:column;
-    gap:8px;
+    gap:12px;
+  }
+  .filter-group .date-input-group {
+    min-width:auto;
   }
   .filter-group .button-group {
     flex-direction:column;
+    gap:8px;
   }
+  .queue-item .item-actions {
+    flex-direction:column;
+    align-items:stretch;
+    gap:6px;
+    min-width:auto;
+  }
+  .queue-item .item-actions select,
+  .queue-item .item-actions button {
+    width:100%;
+    text-align:center;
+  }
+}
+
+/* medium screens - adjust for better button layout */
+@media (max-width:1200px) and (min-width:901px){
+  .main{grid-template-columns:280px 1fr 360px}
 }
 
 /* footer styling */
