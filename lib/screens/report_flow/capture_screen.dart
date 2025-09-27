@@ -6,7 +6,7 @@ import '../../services/location_service.dart';
 import '../../services/mock_ai.dart';
 import '../../models/report.dart';
 import '../../models/enums.dart';
-import 'review_screen.dart';
+import 'ai_analysis_screen.dart';
 
 class CaptureScreen extends StatefulWidget {
   const CaptureScreen({super.key});
@@ -118,7 +118,7 @@ class _CaptureScreenState extends State<CaptureScreen> {
           context,
           MaterialPageRoute(
             builder: (context) =>
-                ReviewScreen(report: report, imageFile: File(image.path)),
+                AIAnalysisScreen(report: report, imageFile: File(image.path)),
           ),
         );
       }
