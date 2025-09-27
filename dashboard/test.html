@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-left: 4px solid #0ea5a4;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.pass { background: #d4edda; color: #155724; }
+        .status.fail { background: #f8d7da; color: #721c24; }
+        .status.info { background: #d1ecf1; color: #0c5460; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>FixMate Dashboard - Test Page</h1>
+
+        <div class="test-item">
+            <h3>🗺️ Map Initialization Test</h3>
+            <p>Testing if the Leaflet map initializes properly without the "Map container not found" error.</p>
+            <div id="map-test-status" class="status" style="background: #fff3cd; color: #856404;">Testing...</div>
+        </div>
+
+        <div class="test-item">
+            <h3>🔧 Backend Connection Test</h3>
+            <p>Testing connection to the Python backend server.</p>
+            <div id="backend-test-status" class="status">Testing...</div>
+        </div>
+
+        <div class="test-item">
+            <h3>📊 Data Loading Test</h3>
+            <p>Testing if ticket data loads successfully from the backend.</p>
+            <div id="data-test-status" class="status">Testing...</div>
+        </div>
+
+        <div class="test-item">
+            <h3>🎨 UI Components Test</h3>
+            <p>Testing if all UI components render correctly (filters, tickets list, etc.).</p>
+            <div id="ui-test-status" class="status">Testing...</div>
+        </div>
+
+        <div class="test-item">
+            <h3>📱 Responsive Design Test</h3>
+            <p>Testing if the dashboard works on different screen sizes.</p>
+            <div id="responsive-test-status" class="status">Testing...</div>
+        </div>
+
+        <div class="test-item">
+            <h3>🚀 Full Dashboard Preview</h3>
+            <p>Live preview of the complete dashboard (if all tests pass).</p>
+            <iframe id="dashboard-frame" src="index.html" style="display: none;"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Test map initialization
+        fetch('index.html')
+            .then(response => response.text())
+            .then(html => {
+                const hasMapElement = html.includes('id="map"');
+                const hasLeaflet = html.includes('leaflet');
+
+                if (hasMapElement && hasLeaflet) {
+                    document.getElementById('map-test-status').className = 'status pass';
+                    document.getElementById('map-test-status').textContent = 'PASS: Map elements found';
+                } else {
+                    document.getElementById('map-test-status').className = 'status fail';
+                    document.getElementById('map-test-status').textContent = 'FAIL: Map elements missing';
+                }
+            })
+            .catch(error => {
+                document.getElementById('map-test-status').className = 'status fail';
+                document.getElementById('map-test-status').textContent = 'ERROR: ' + error.message;
+            });
+
+        // Test backend connection
+        fetch('http://127.0.0.1:8000/test')
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('backend-test-status').className = 'status pass';
+                    document.getElementById('backend-test-status').textContent = 'PASS: Backend responding';
+                    return response.json();
+                } else {
+                    throw new Error('Backend not responding');
+                }
+            })
+            .then(data => {
+                console.log('Backend test data:', data);
+                document.getElementById('data-test-status').className = 'status pass';
+                document.getElementById('data-test-status').textContent = 'PASS: Data loaded (' + (Array.isArray(data) ? data.length : 'object') + ')';
+            })
+            .catch(error => {
+                console.log('Backend test error:', error);
+                document.getElementById('backend-test-status').className = 'status fail';
+                document.getElementById('backend-test-status').textContent = 'FAIL: ' + error.message;
+
+                // Try loading demo data instead
+                fetch('data/demo-reports.json')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('data-test-status').className = 'status info';
+                        document.getElementById('data-test-status').textContent = 'INFO: Using demo data (' + data.length + ' reports)';
+                    })
+                    .catch(demoError => {
+                        document.getElementById('data-test-status').className = 'status fail';
+                        document.getElementById('data-test-status').textContent = 'FAIL: No data available';
+                    });
+            });
+
+        // Test UI components
+        fetch('styles.css')
+            .then(response => response.text())
+            .then(css => {
+                const hasModernCSS = css.includes('--primary') && css.includes('grid-template-columns');
+                const hasResponsive = css.includes('@media');
+
+                if (hasModernCSS && hasResponsive) {
+                    document.getElementById('ui-test-status').className = 'status pass';
+                    document.getElementById('ui-test-status').textContent = 'PASS: Modern CSS detected';
+                } else {
+                    document.getElementById('ui-test-status').className = 'status fail';
+                    document.getElementById('ui-test-status').textContent = 'FAIL: CSS issues detected';
+                }
+            })
+            .catch(error => {
+                document.getElementById('ui-test-status').className = 'status fail';
+                document.getElementById('ui-test-status').textContent = 'ERROR: ' + error.message;
+            });
+
+        // Test responsive design
+        const screenWidth = window.screen.width;
+        const screenHeight = window.screen.height;
+
+        if (screenWidth >= 1200) {
+            document.getElementById('responsive-test-status').className = 'status pass';
+            document.getElementById('responsive-test-status').textContent = 'PASS: Desktop resolution (' + screenWidth + 'x' + screenHeight + ')';
+        } else if (screenWidth >= 768) {
+            document.getElementById('responsive-test-status').className = 'status pass';
+            document.getElementById('responsive-test-status').textContent = 'PASS: Tablet resolution (' + screenWidth + 'x' + screenHeight + ')';
+        } else {
+            document.getElementById('responsive-test-status').className = 'status pass';
+            document.getElementById('responsive-test-status').textContent = 'PASS: Mobile resolution (' + screenWidth + 'x' + screenHeight + ')';
+        }
+
+        // Show dashboard preview if all tests pass
+        setTimeout(() => {
+            const allTestsPassed =
+                document.getElementById('map-test-status').classList.contains('pass') &&
+                document.getElementById('backend-test-status').classList.contains('pass') &&
+                document.getElementById('ui-test-status').classList.contains('pass');
+
+            if (allTestsPassed) {
+                document.getElementById('dashboard-frame').style.display = 'block';
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

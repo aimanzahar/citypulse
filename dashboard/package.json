@@ -1,0 +1,16 @@
+{
+  "name": "citypulse-dashboard",
+  "version": "1.0.0",
+  "description": "CityPulse Dashboard with Chatbot",
+  "scripts": {
+    "setup": "node replace-env-vars.js",
+    "serve": "python -m http.server 3000",
+    "dev": "npm run setup && npm run serve"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {},
+  "keywords": ["dashboard", "citypulse", "chatbot"],
+  "author": "CityPulse Team"
+}
