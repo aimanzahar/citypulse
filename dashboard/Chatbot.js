@@ -54,7 +54,8 @@ function Chatbot() {
             setConfig({
               OPENROUTER_API_KEY: configData.OPENROUTER_API_KEY,
               OPENROUTER_BASE_URL: configData.OPENROUTER_BASE_URL,
-              OPENROUTER_MODEL: configData.OPENROUTER_MODEL
+              OPENROUTER_MODEL: configData.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
+              OPENROUTER_REASONING: (configData.OPENROUTER_REASONING === true || configData.OPENROUTER_REASONING === 'true')
             });
 
             console.log('Configuration loaded from backend server successfully');
@@ -76,7 +77,8 @@ function Chatbot() {
           setConfig({
             OPENROUTER_API_KEY: null,
             OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
-            OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
+            OPENROUTER_MODEL: 'deepseek/deepseek-chat-v3.1:free',
+            OPENROUTER_REASONING: true
           });
         }
       } else {
@@ -85,7 +87,8 @@ function Chatbot() {
         setConfig({
           OPENROUTER_API_KEY: 'CONFIGURE_BACKEND_ENDPOINT',
           OPENROUTER_BASE_URL: 'https://openrouter.ai/api/v1',
-          OPENROUTER_MODEL: 'x-ai/grok-4-fast:free'
+          OPENROUTER_MODEL: 'deepseek/deepseek-chat-v3.1:free',
+          OPENROUTER_REASONING: true
         });
       }
     };
@@ -148,7 +151,7 @@ function Chatbot() {
   };
 
   // Fetch tickets with location information
-  const fetchTicketLocations = async (severity = 'high') => {
+  const fetchTicketLocations = async (severity = 'all') => {
     try {
       console.log(`Fetching ${severity} severity ticket locations...`);
       const response = await fetch(`http://localhost:3001/api/ticket-locations?severity=${severity}`);
@@ -173,6 +176,12 @@ function Chatbot() {
       console.error('Error fetching ticket locations:', error);
       return null;
     }
+  };
+
+  // Utility: rudimentary intent check for routing queries
+  const isRouteIntent = (text) => {
+    const lc = (text || '').toLowerCase();
+    return /(route|optimal route|best route|path|navigate|order.*ticket|plan.*route)/.test(lc);
   };
 
   // Send message to OpenRouter API
@@ -210,8 +219,8 @@ function Chatbot() {
       // Fetch real ticket data to provide accurate context
       const ticketStats = await fetchTicketStats();
 
-      // Fetch location information for high severity tickets
-      const locationData = await fetchTicketLocations('high');
+      // Fetch location information for ALL severities
+      const locationData = await fetchTicketLocations('all');
 
       // Debug logging for location data
       console.log('Location data fetched:', locationData);
@@ -311,8 +320,9 @@ Always use these actual numbers when answering questions about ticket counts, se
               content: userMessage
             }
           ],
-          max_tokens: 500,
-          temperature: 0.7
+          max_tokens: 700,
+          temperature: 0.5,
+          extra_body: config.OPENROUTER_REASONING ? { reasoning: true } : undefined
         })
       });
 
@@ -326,8 +336,27 @@ Always use these actual numbers when answering questions about ticket counts, se
       const data = await response.json();
       console.log('OpenRouter API response:', data);
 
+      let botResponse = null;
       if (data.choices && data.choices[0] && data.choices[0].message) {
-        const botResponse = cleanMarkdown(data.choices[0].message.content);
+        botResponse = cleanMarkdown(data.choices[0].message.content);
+
+        // If the user asked for a route, augment with computed route from dashboard server
+        if (isRouteIntent(userMessage)) {
+          try {
+            // Plan over ALL severities (no severity filter) and new tickets by default
+            const routeRes = await fetch('http://localhost:3001/api/optimal-route?status=submitted&limit=10');
+            if (routeRes.ok) {
+              const route = await routeRes.json();
+              if (route && !route.error && route.tickets && route.tickets.length) {
+                const steps = route.tickets.map((t, i) => `${i + 1}. ${t.category || 'ticket'} @ ${t.address || `${t.latitude},${t.longitude}`}`);
+                const routeText = `Suggested route (${route.tickets.length} stops, ~${route.total_distance_km} km). Open in Google Maps: ${route.google_maps_url || 'N/A'}\n` + steps.join('\n');
+                botResponse += `\n\n${routeText}`;
+              }
+            }
+          } catch (e) {
+            console.warn('Failed to fetch optimal route:', e);
+          }
+        }
 
         setMessages(prev => [...prev, {
           id: Date.now() + 1,
