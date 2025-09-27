@@ -5,7 +5,7 @@ import 'package:uuid/uuid.dart';
 import '../models/report.dart';
 import '../models/enums.dart';
 
-/// Service for communicating with the FixMate Backend API
+/// Service for communicating with the CityPulse Backend API
 class ApiService {
   // Configure this to match your backend URL
   // Use localhost for web/desktop, network IP for mobile/emulator
@@ -77,8 +77,10 @@ class ApiService {
       request.fields['latitude'] = latitude.toString();
       request.fields['longitude'] = longitude.toString();
       request.fields['description'] = description;
-      if (userName != null && userName.isNotEmpty) request.fields['user_name'] = userName;
-      if (address != null && address.isNotEmpty) request.fields['address'] = address;
+      if (userName != null && userName.isNotEmpty)
+        request.fields['user_name'] = userName;
+      if (address != null && address.isNotEmpty)
+        request.fields['address'] = address;
 
       // Add the image file
       request.files.add(
@@ -162,7 +164,9 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 204) {
         return true;
       } else {
-        print('Failed to delete ticket: ${response.statusCode} ${response.body}');
+        print(
+          'Failed to delete ticket: ${response.statusCode} ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -190,7 +194,8 @@ class ApiService {
   /// Convert API ticket response to Report model
   static Report _convertApiTicketToReport(Map<String, dynamic> data) {
     final id = (data['id'] ?? data['ticket_id'] ?? '').toString();
-    final imageUrl = (data['image_url'] as String?) ??
+    final imageUrl =
+        (data['image_url'] as String?) ??
         (data['image_path'] != null
             ? '$_uploadsUrl/${(data['image_path'] as String).split('/').last}'
             : null);
@@ -207,9 +212,19 @@ class ApiService {
         lat: (data['latitude'] as num?)?.toDouble() ?? 0.0,
         lng: (data['longitude'] as num?)?.toDouble() ?? 0.0,
       ),
-      createdAt: (data['created_at'] ?? data['createdAt'] ?? DateTime.now().toIso8601String()) as String,
-      updatedAt: (data['updated_at'] ?? data['updatedAt'] ?? DateTime.now().toIso8601String()) as String,
-      deviceId: data['user_id'] != null ? data['user_id'].toString() : 'api-$id',
+      createdAt:
+          (data['created_at'] ??
+                  data['createdAt'] ??
+                  DateTime.now().toIso8601String())
+              as String,
+      updatedAt:
+          (data['updated_at'] ??
+                  data['updatedAt'] ??
+                  DateTime.now().toIso8601String())
+              as String,
+      deviceId: data['user_id'] != null
+          ? data['user_id'].toString()
+          : 'api-$id',
       notes: data['description'] as String?,
       address: data['address'] as String?,
       submittedBy: data['user_name'] as String?,

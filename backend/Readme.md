@@ -2,7 +2,7 @@ Perfect 👍 thanks for clarifying — let’s keep it **venv only**. I’ll adj
 
 ---
 
-# 🛠️ FixMate Backend – Hackathon Prototype
+# 🛠️ CityPulse Backend – Hackathon Prototype
 
 Smart citizen-driven urban maintenance platform powered by **Computer Vision + Generative AI**.
 This backend runs fully **locally** (no cloud required).

@@ -46,7 +46,7 @@
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 
-	<!-- Permissions required by FixMate -->
+	<!-- Permissions required by CityPulse -->
 	<key>NSCameraUsageDescription</key>
 	<string>Camera access is required to capture issue photos.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

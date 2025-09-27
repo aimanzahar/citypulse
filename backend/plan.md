@@ -2,7 +2,7 @@ Perfect 👍 Before I drop a full codebase, let’s agree on the **flow + plan**
 
 ---
 
-# ⚡ Backend Flow (FixMate Local Prototype)
+# ⚡ Backend Flow (CityPulse Local Prototype)
 
 ### 1. Citizen Upload Flow
 
@@ -32,7 +32,7 @@ Perfect 👍 Before I drop a full codebase, let’s agree on the **flow + plan**
 * Every report:
 
   * Pass image to model → detect objects.
-  * Map objects to FixMate categories (`pothole`, `streetlight`, `trash`, `signage`).
+  * Map objects to CityPulse categories (`pothole`, `streetlight`, `trash`, `signage`).
   * Apply **severity scoring** (e.g. bounding box area = High if > certain %).
 * If model fails (no internet, missing weights):
 

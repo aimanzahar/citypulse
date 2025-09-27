@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens and themes for FixMate (Civic Pro Minimal)
+/// Design tokens and themes for CityPulse (Civic Pro Minimal)
 class AppColors {
   // Primary civic colors
   static const Color civicBlue = Color(0xFF2563EB);

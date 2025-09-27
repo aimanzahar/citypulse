@@ -430,7 +430,7 @@ const cycleStatus = async (reportId) => {
   return (
     <div className="app-root">
       <header className="header">
-        <div className="brand">{t('dashboard.brand') || 'FixMate'}</div>
+        <div className="brand">{t('dashboard.brand') || 'CityPulse'}</div>
         <div className="lang-toggle">
           <label style={{fontSize:12, color:'#374151'}}>{t('label.language') || 'Language'}</label>
           <select value={lang} onChange={e=>setLang(e.target.value)}>

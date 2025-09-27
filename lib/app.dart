@@ -10,8 +10,8 @@ import 'screens/settings/settings_screen.dart';
 import 'theme/themes.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class FixMateApp extends StatelessWidget {
-  const FixMateApp({super.key});
+class CityPulseApp extends StatelessWidget {
+  const CityPulseApp({super.key});
 
   @override
   Widget build(BuildContext context) {

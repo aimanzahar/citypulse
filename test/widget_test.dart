@@ -6,7 +6,7 @@ import 'package:citypulse/app.dart';
 
 void main() {
   testWidgets('App builds MaterialApp', (WidgetTester tester) async {
-    await tester.pumpWidget(const FixMateApp());
+    await tester.pumpWidget(const CityPulseApp());
     expect(find.byType(MaterialApp), findsOneWidget);
   });
 }

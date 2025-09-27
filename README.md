@@ -1,6 +1,6 @@
-# 🏗️ FixMate - Smart Citizen-Driven Urban Maintenance Platform
+# 🏗️ CityPulse - Smart Citizen-Driven Urban Maintenance Platform
 
-FixMate is a comprehensive citizen reporting application that combines **Flutter frontend** with **Python FastAPI backend** and **AI-powered image classification**. Users can capture urban issues (potholes, broken streetlights, trash, etc.), get automatic AI classification, and track their reports through a complete management system.
+CityPulse is a comprehensive citizen reporting application that combines **Flutter frontend** with **Python FastAPI backend** and **AI-powered image classification**. Users can capture urban issues (potholes, broken streetlights, trash, etc.), get automatic AI classification, and track their reports through a complete management system.
 
 ## 🎯 System Architecture
 

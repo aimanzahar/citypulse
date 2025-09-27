@@ -16,18 +16,18 @@ logger = logging.getLogger(__name__)
 # ----------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting FixMate Backend...")
+    logger.info("Starting CityPulse Backend...")
     init_ai_service()  # ✅ Models load once here
     logger.info("AI models loaded successfully.")
     yield
-    logger.info("FixMate Backend shutting down...")
+    logger.info("CityPulse Backend shutting down...")
 
 # ----------------------
 # Initialize FastAPI
 # ----------------------
 app = FastAPI(
-    title="FixMate Backend API",
-    description="Backend for FixMate Hackathon Prototype",
+    title="CityPulse Backend API",
+    description="Backend for CityPulse Hackathon Prototype",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -80,7 +80,7 @@ except Exception as e:
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to FixMate Backend API! Visit /docs for API documentation."}
+    return {"message": "Welcome to CityPulse Backend API! Visit /docs for API documentation."}
 
 @app.get("/test")
 def test():
